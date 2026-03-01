@@ -694,13 +694,31 @@ import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import multer from "multer";
 import fs from "fs";
+import pkg from "pg";
 
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-const db = new Database("cricface.db");
+
+const { Pool } = pkg;
+
+const isProduction = process.env.NODE_ENV === "production";
+
+let db: any;
+let pool: any;
+
+if (isProduction) {
+  pool = new Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: { rejectUnauthorized: false },
+  });
+} else {
+  db = new Database("cricface.db");
+}
+
+// const db = new Database("cricface.db");
 
 // Ensure upload folders exist
 if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
@@ -785,115 +803,209 @@ app.post("/api/admin/login", (req, res) => {
   };
 
   // API Routes
-  app.get("/api/products", (req, res) => {
-    const products = db.prepare("SELECT * FROM products ORDER BY created_at DESC").all();
-    res.json(products.map((p: any) => ({
-      ...p,
-      images: p.images ? JSON.parse(p.images) : [],
-      specifications: p.specifications ? JSON.parse(p.specifications) : {}
-    })));
-  });
+  // app.get("/api/products", (req, res) => {
+  //   const products = db.prepare("SELECT * FROM products ORDER BY created_at DESC").all();
+  //   res.json(products.map((p: any) => ({
+  //     ...p,
+  //     images: p.images ? JSON.parse(p.images) : [],
+  //     specifications: p.specifications ? JSON.parse(p.specifications) : {}
+  //   })));
+  // });
+  app.get("/api/products", async (req, res) => {
+  try {
+    if (isProduction) {
+      const result = await pool.query(
+        "SELECT * FROM products ORDER BY created_at DESC"
+      );
 
-  app.get("/api/products/:id", (req, res) => {
-    const product = db.prepare("SELECT * FROM products WHERE id = ?").get(req.params.id);
-    if (!product) return res.status(404).json({ message: "Not found" });
+      const products = result.rows.map((p: any) => ({
+        ...p,
+        images: p.images ? JSON.parse(p.images) : [],
+        specifications: p.specifications
+          ? JSON.parse(p.specifications)
+          : {},
+      }));
 
-    res.json({
-      ...product,
-      images: product.images ? JSON.parse(product.images) : [],
-      specifications: product.specifications ? JSON.parse(product.specifications) : {}
-    });
-  });
+      return res.json(products);
+    } else {
+      const products = db
+        .prepare("SELECT * FROM products ORDER BY created_at DESC")
+        .all();
+
+      return res.json(
+        products.map((p: any) => ({
+          ...p,
+          images: p.images ? JSON.parse(p.images) : [],
+          specifications: p.specifications
+            ? JSON.parse(p.specifications)
+            : {},
+        }))
+      );
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+  // app.get("/api/products/:id", (req, res) => {
+  //   const product = db.prepare("SELECT * FROM products WHERE id = ?").get(req.params.id);
+  //   if (!product) return res.status(404).json({ message: "Not found" });
+
+  //   res.json({
+  //     ...product,
+  //     images: product.images ? JSON.parse(product.images) : [],
+  //     specifications: product.specifications ? JSON.parse(product.specifications) : {}
+  //   });
+  // });
+
+  app.get("/api/products/:id", async (req, res) => {
+  try {
+    if (isProduction) {
+      const result = await pool.query(
+        "SELECT * FROM products WHERE id = $1",
+        [req.params.id]
+      );
+
+      if (result.rows.length === 0)
+        return res.status(404).json({ message: "Not found" });
+
+      const product = result.rows[0];
+
+      return res.json({
+        ...product,
+        images: product.images ? JSON.parse(product.images) : [],
+        specifications: product.specifications
+          ? JSON.parse(product.specifications)
+          : {},
+      });
+    } else {
+      const product = db
+        .prepare("SELECT * FROM products WHERE id = ?")
+        .get(req.params.id);
+
+      if (!product)
+        return res.status(404).json({ message: "Not found" });
+
+      return res.json({
+        ...product,
+        images: product.images ? JSON.parse(product.images) : [],
+        specifications: product.specifications
+          ? JSON.parse(product.specifications)
+          : {},
+      });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+//   app.put(
+//   "/api/products/:id",
+//   authenticateToken,
+//   upload.fields([{ name: "images" }, { name: "video", maxCount: 1 }]),
+//   (req: any, res) => {
+
+//     const id = req.params.id;
+
+//     const product = db.prepare("SELECT * FROM products WHERE id = ?").get(id);
+//     if (!product) return res.status(404).json({ message: "Product not found" });
+
+//     const imageFiles = req.files?.images || [];
+//     const videoFile = req.files?.video?.[0];
+
+//     const imagePaths =
+//       imageFiles.length > 0
+//         ? imageFiles.map((file: any) => `/uploads/images/${file.filename}`)
+//         : JSON.parse(product.images || "[]");
+
+//     const videoPath =
+//       videoFile
+//         ? `/uploads/videos/${videoFile.filename}`
+//         : product.video;
+
+//     db.prepare(`
+//       UPDATE products SET
+//       name = ?, original_price_inr = ?, price_inr = ?,
+//       original_price_usd = ?, price_usd = ?,
+//       original_price_eur = ?, price_eur = ?,
+//       grade = ?, willow_type = ?, weight = ?, style = ?,
+//       description = ?, images = ?, specifications = ?,
+//       featured = ?, video = ?
+//       WHERE id = ?
+//     `).run(
+//       req.body.name,
+//       req.body.original_price_inr || null,
+//       req.body.price_inr,
+//       req.body.original_price_usd || null,
+//       req.body.price_usd,
+//       req.body.original_price_eur || null,
+//       req.body.price_eur,
+//       req.body.grade,
+//       req.body.willow_type,
+//       req.body.weight,
+//       req.body.style,
+//       req.body.description,
+//       JSON.stringify(imagePaths),
+//       req.body.specifications,
+//       req.body.featured === "1" ? 1 : 0,
+//       videoPath,
+//       id
+//     );
+
+//     res.json({ message: "Updated successfully" });
+//   }
+// );
+
+//   app.delete("/api/products/:id", authenticateToken, (req, res) => {
+//   db.prepare("DELETE FROM products WHERE id = ?").run(req.params.id);
+//   res.json({ message: "Deleted successfully" });
+// });
+
 
   app.put(
   "/api/products/:id",
   authenticateToken,
   upload.fields([{ name: "images" }, { name: "video", maxCount: 1 }]),
-  (req: any, res) => {
+  async (req: any, res) => {
+    try {
+      const id = req.params.id;
 
-    const id = req.params.id;
+      let existingProduct;
 
-    const product = db.prepare("SELECT * FROM products WHERE id = ?").get(id);
-    if (!product) return res.status(404).json({ message: "Product not found" });
+      if (isProduction) {
+        const result = await pool.query(
+          "SELECT * FROM products WHERE id = $1",
+          [id]
+        );
+        if (result.rows.length === 0)
+          return res.status(404).json({ message: "Product not found" });
 
-    const imageFiles = req.files?.images || [];
-    const videoFile = req.files?.video?.[0];
+        existingProduct = result.rows[0];
+      } else {
+        existingProduct = db
+          .prepare("SELECT * FROM products WHERE id = ?")
+          .get(id);
 
-    const imagePaths =
-      imageFiles.length > 0
-        ? imageFiles.map((file: any) => `/uploads/images/${file.filename}`)
-        : JSON.parse(product.images || "[]");
-
-    const videoPath =
-      videoFile
-        ? `/uploads/videos/${videoFile.filename}`
-        : product.video;
-
-    db.prepare(`
-      UPDATE products SET
-      name = ?, original_price_inr = ?, price_inr = ?,
-      original_price_usd = ?, price_usd = ?,
-      original_price_eur = ?, price_eur = ?,
-      grade = ?, willow_type = ?, weight = ?, style = ?,
-      description = ?, images = ?, specifications = ?,
-      featured = ?, video = ?
-      WHERE id = ?
-    `).run(
-      req.body.name,
-      req.body.original_price_inr || null,
-      req.body.price_inr,
-      req.body.original_price_usd || null,
-      req.body.price_usd,
-      req.body.original_price_eur || null,
-      req.body.price_eur,
-      req.body.grade,
-      req.body.willow_type,
-      req.body.weight,
-      req.body.style,
-      req.body.description,
-      JSON.stringify(imagePaths),
-      req.body.specifications,
-      req.body.featured === "1" ? 1 : 0,
-      videoPath,
-      id
-    );
-
-    res.json({ message: "Updated successfully" });
-  }
-);
-
-  app.delete("/api/products/:id", authenticateToken, (req, res) => {
-  db.prepare("DELETE FROM products WHERE id = ?").run(req.params.id);
-  res.json({ message: "Deleted successfully" });
-});
-
-  app.post(
-    "/api/products",
-    authenticateToken,
-    upload.fields([{ name: "images" }, { name: "video", maxCount: 1 }]),
-    (req: any, res) => {
+        if (!existingProduct)
+          return res.status(404).json({ message: "Product not found" });
+      }
 
       const imageFiles = req.files?.images || [];
       const videoFile = req.files?.video?.[0];
 
-      const imagePaths = imageFiles.map(
-        (file: any) => `/uploads/images/${file.filename}`
-      );
+      const imagePaths =
+        imageFiles.length > 0
+          ? imageFiles.map((file: any) => `/uploads/images/${file.filename}`)
+          : JSON.parse(existingProduct.images || "[]");
 
-      const videoPath = videoFile
-        ? `/uploads/videos/${videoFile.filename}`
-        : null;
+      const videoPath =
+        videoFile
+          ? `/uploads/videos/${videoFile.filename}`
+          : existingProduct.video;
 
-      const result = db.prepare(`
-        INSERT INTO products
-        (name, original_price_inr, price_inr,
-         original_price_usd, price_usd,
-         original_price_eur, price_eur,
-         grade, willow_type, weight, style,
-         description, images, specifications,
-         featured, video)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      `).run(
+      const values = [
         req.body.name,
         req.body.original_price_inr || null,
         req.body.price_inr,
@@ -909,14 +1021,204 @@ app.post("/api/admin/login", (req, res) => {
         JSON.stringify(imagePaths),
         req.body.specifications,
         req.body.featured === "1" ? 1 : 0,
-        videoPath
+        videoPath,
+        id,
+      ];
+
+      if (isProduction) {
+        await pool.query(
+          `UPDATE products SET
+            name = $1,
+            original_price_inr = $2,
+            price_inr = $3,
+            original_price_usd = $4,
+            price_usd = $5,
+            original_price_eur = $6,
+            price_eur = $7,
+            grade = $8,
+            willow_type = $9,
+            weight = $10,
+            style = $11,
+            description = $12,
+            images = $13,
+            specifications = $14,
+            featured = $15,
+            video = $16
+           WHERE id = $17`,
+          values
+        );
+      } else {
+        db.prepare(`
+          UPDATE products SET
+            name = ?,
+            original_price_inr = ?,
+            price_inr = ?,
+            original_price_usd = ?,
+            price_usd = ?,
+            original_price_eur = ?,
+            price_eur = ?,
+            grade = ?,
+            willow_type = ?,
+            weight = ?,
+            style = ?,
+            description = ?,
+            images = ?,
+            specifications = ?,
+            featured = ?,
+            video = ?
+           WHERE id = ?
+        `).run(...values);
+      }
+
+      res.json({ message: "Updated successfully" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Update failed" });
+    }
+  }
+);
+
+  app.delete("/api/products/:id", authenticateToken, async (req, res) => {
+  try {
+    if (isProduction) {
+      await pool.query("DELETE FROM products WHERE id = $1", [
+        req.params.id,
+      ]);
+    } else {
+      db.prepare("DELETE FROM products WHERE id = ?").run(
+        req.params.id
+      );
+    }
+
+    res.json({ message: "Deleted successfully" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Server error" });
+  }
+});
+
+  // app.post(
+  //   "/api/products",
+  //   authenticateToken,
+  //   upload.fields([{ name: "images" }, { name: "video", maxCount: 1 }]),
+  //   (req: any, res) => {
+
+  //     const imageFiles = req.files?.images || [];
+  //     const videoFile = req.files?.video?.[0];
+
+  //     const imagePaths = imageFiles.map(
+  //       (file: any) => `/uploads/images/${file.filename}`
+  //     );
+
+  //     const videoPath = videoFile
+  //       ? `/uploads/videos/${videoFile.filename}`
+  //       : null;
+
+  //     const result = db.prepare(`
+  //       INSERT INTO products
+  //       (name, original_price_inr, price_inr,
+  //        original_price_usd, price_usd,
+  //        original_price_eur, price_eur,
+  //        grade, willow_type, weight, style,
+  //        description, images, specifications,
+  //        featured, video)
+  //       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  //     `).run(
+  //       req.body.name,
+  //       req.body.original_price_inr || null,
+  //       req.body.price_inr,
+  //       req.body.original_price_usd || null,
+  //       req.body.price_usd,
+  //       req.body.original_price_eur || null,
+  //       req.body.price_eur,
+  //       req.body.grade,
+  //       req.body.willow_type,
+  //       req.body.weight,
+  //       req.body.style,
+  //       req.body.description,
+  //       JSON.stringify(imagePaths),
+  //       req.body.specifications,
+  //       req.body.featured === "1" ? 1 : 0,
+  //       videoPath
+  //     );
+
+  //     res.json({ id: result.lastInsertRowid });
+  //   }
+  // );
+
+  app.post(
+  "/api/products",
+  authenticateToken,
+  upload.fields([{ name: "images" }, { name: "video", maxCount: 1 }]),
+  async (req: any, res) => {
+    try {
+      const imageFiles = req.files?.images || [];
+      const videoFile = req.files?.video?.[0];
+
+      const imagePaths = imageFiles.map(
+        (file: any) => `/uploads/images/${file.filename}`
       );
 
-      res.json({ id: result.lastInsertRowid });
-    }
-  );
+      const videoPath = videoFile
+        ? `/uploads/videos/${videoFile.filename}`
+        : null;
 
-  // 👇 THIS PART WAS MISSING
+      const values = [
+        req.body.name,
+        req.body.original_price_inr || null,
+        req.body.price_inr,
+        req.body.original_price_usd || null,
+        req.body.price_usd,
+        req.body.original_price_eur || null,
+        req.body.price_eur,
+        req.body.grade,
+        req.body.willow_type,
+        req.body.weight,
+        req.body.style,
+        req.body.description,
+        JSON.stringify(imagePaths),
+        req.body.specifications,
+        req.body.featured === "1" ? 1 : 0,
+        videoPath,
+      ];
+
+      if (isProduction) {
+        const result = await pool.query(
+          `INSERT INTO products
+          (name, original_price_inr, price_inr,
+           original_price_usd, price_usd,
+           original_price_eur, price_eur,
+           grade, willow_type, weight, style,
+           description, images, specifications,
+           featured, video)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+           RETURNING id`,
+          values
+        );
+
+        return res.json({ id: result.rows[0].id });
+      } else {
+        const result = db.prepare(`
+          INSERT INTO products
+          (name, original_price_inr, price_inr,
+           original_price_usd, price_usd,
+           original_price_eur, price_eur,
+           grade, willow_type, weight, style,
+           description, images, specifications,
+           featured, video)
+           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `).run(...values);
+
+        return res.json({ id: result.lastInsertRowid });
+      }
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Insert failed" });
+    }
+  }
+);
+
+      // 👇 THIS PART WAS MISSING
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -931,7 +1233,6 @@ app.post("/api/admin/login", (req, res) => {
     res.sendFile(path.join(clientDistPath, "index.html"));
   });
 }
-
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
