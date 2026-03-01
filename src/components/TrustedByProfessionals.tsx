@@ -435,18 +435,18 @@ const videos = [
   },
   {
     id: 3,
-    name: "Trusted by professional",
-    video: "/videos/trusted-by-professional-2.mp4",
-  },
-  {
-    id: 4,
     name: "Sixer",
     video: "/videos/six.mp4",
   },
   {
-    id: 5,
+    id: 4,
     name: "Rocket Ping",
     video: "/videos/rocket-ping.MP4",
+  },
+  {
+    id: 5,
+    name: "Trusted by professional",
+    video: "/videos/trusted-by-professional-2.mp4",
   },
 ];
 
