@@ -573,7 +573,7 @@ const videos = [
   },
   {
     id: 3,
-    name: "Match Performance",
+    name: "Trusted by professionals",
     video: "/videos/trusted-by-professional-2.mp4",
   },
   {
