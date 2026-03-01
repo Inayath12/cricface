@@ -3180,62 +3180,62 @@ async function startServer() {
     });
   }
 
-  // Temporary routes
+//   // Temporary routes
 
-  app.get("/api/export-backup", async (req, res) => {
-  try {
-    const products = await pool.query("SELECT * FROM products ORDER BY id ASC");
-    const inquiries = await pool.query("SELECT * FROM inquiries ORDER BY id ASC");
-    res.json({
-      products: products.rows,
-      inquiries: inquiries.rows,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Export failed" });
-  }
-});
+//   app.get("/api/export-backup", async (req, res) => {
+//   try {
+//     const products = await pool.query("SELECT * FROM products ORDER BY id ASC");
+//     const inquiries = await pool.query("SELECT * FROM inquiries ORDER BY id ASC");
+//     res.json({
+//       products: products.rows,
+//       inquiries: inquiries.rows,
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Export failed" });
+//   }
+// });
 
 
-  app.post("/api/import-backup", async (req, res) => {
-  try {
-    const { products, inquiries } = req.body;
+//   app.post("/api/import-backup", async (req, res) => {
+//   try {
+//     const { products, inquiries } = req.body;
 
-    for (const p of products) {
-      await pool.query(
-        `INSERT INTO products
-         (name, original_price_inr, price_inr, original_price_usd, price_usd,
-          original_price_eur, price_eur, grade, willow_type, weight, style,
-          description, images, specifications, featured, video, created_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
-         ON CONFLICT DO NOTHING`,
-        [
-          p.name, p.original_price_inr, p.price_inr,
-          p.original_price_usd, p.price_usd,
-          p.original_price_eur, p.price_eur,
-          p.grade, p.willow_type, p.weight, p.style,
-          p.description, p.images, p.specifications,
-          p.featured, p.video, p.created_at,
-        ]
-      );
-    }
+//     for (const p of products) {
+//       await pool.query(
+//         `INSERT INTO products
+//          (name, original_price_inr, price_inr, original_price_usd, price_usd,
+//           original_price_eur, price_eur, grade, willow_type, weight, style,
+//           description, images, specifications, featured, video, created_at)
+//          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+//          ON CONFLICT DO NOTHING`,
+//         [
+//           p.name, p.original_price_inr, p.price_inr,
+//           p.original_price_usd, p.price_usd,
+//           p.original_price_eur, p.price_eur,
+//           p.grade, p.willow_type, p.weight, p.style,
+//           p.description, p.images, p.specifications,
+//           p.featured, p.video, p.created_at,
+//         ]
+//       );
+//     }
 
-    for (const i of inquiries) {
-      await pool.query(
-        `INSERT INTO inquiries
-         (name, contact, email, product_name, message, created_at)
-         VALUES ($1,$2,$3,$4,$5,$6)
-         ON CONFLICT DO NOTHING`,
-        [i.name, i.contact, i.email, i.product_name, i.message, i.created_at]
-      );
-    }
+//     for (const i of inquiries) {
+//       await pool.query(
+//         `INSERT INTO inquiries
+//          (name, contact, email, product_name, message, created_at)
+//          VALUES ($1,$2,$3,$4,$5,$6)
+//          ON CONFLICT DO NOTHING`,
+//         [i.name, i.contact, i.email, i.product_name, i.message, i.created_at]
+//       );
+//     }
 
-    res.json({ message: `✅ Imported ${products.length} products and ${inquiries.length} inquiries` });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Import failed" });
-  }
-});
+//     res.json({ message: `✅ Imported ${products.length} products and ${inquiries.length} inquiries` });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Import failed" });
+//   }
+// });
 
 
   if (!isProduction) {
