@@ -1907,6 +1907,137 @@ async function startServer() {
     }
   );
 
+  app.put(
+  "/api/products/:id",
+  authenticateToken,
+  upload.fields([{ name: "images" }, { name: "video", maxCount: 1 }]),
+  async (req: any, res: Response) => {
+    try {
+      const id = req.params.id;
+
+      let existingProduct;
+
+      if (isProduction) {
+        const result = await pool.query(
+          "SELECT * FROM products WHERE id = $1",
+          [id]
+        );
+
+        if (result.rows.length === 0)
+          return res.status(404).json({ message: "Product not found" });
+
+        existingProduct = result.rows[0];
+      } else {
+        existingProduct = db
+          .prepare("SELECT * FROM products WHERE id = ?")
+          .get(id);
+
+        if (!existingProduct)
+          return res.status(404).json({ message: "Product not found" });
+      }
+
+      const imageFiles = req.files?.images || [];
+      const videoFile = req.files?.video?.[0];
+
+      const imagePaths =
+        imageFiles.length > 0
+          ? imageFiles.map((file: any) => `/uploads/images/${file.filename}`)
+          : JSON.parse(existingProduct.images || "[]");
+
+      const videoPath =
+        videoFile
+          ? `/uploads/videos/${videoFile.filename}`
+          : existingProduct.video;
+
+      if (isProduction) {
+        await pool.query(
+          `UPDATE products SET
+            name = $1,
+            original_price_inr = $2,
+            price_inr = $3,
+            original_price_usd = $4,
+            price_usd = $5,
+            original_price_eur = $6,
+            price_eur = $7,
+            grade = $8,
+            willow_type = $9,
+            weight = $10,
+            style = $11,
+            description = $12,
+            images = $13,
+            specifications = $14,
+            featured = $15,
+            video = $16
+           WHERE id = $17`,
+          [
+            req.body.name,
+            req.body.original_price_inr || null,
+            req.body.price_inr,
+            req.body.original_price_usd || null,
+            req.body.price_usd,
+            req.body.original_price_eur || null,
+            req.body.price_eur,
+            req.body.grade,
+            req.body.willow_type,
+            req.body.weight,
+            req.body.style,
+            req.body.description,
+            JSON.stringify(imagePaths),
+            req.body.specifications,
+            req.body.featured === "1" ? 1 : 0,
+            videoPath,
+            id,
+          ]
+        );
+      } else {
+        db.prepare(`
+          UPDATE products SET
+            name = ?,
+            original_price_inr = ?,
+            price_inr = ?,
+            original_price_usd = ?,
+            price_usd = ?,
+            original_price_eur = ?,
+            price_eur = ?,
+            grade = ?,
+            willow_type = ?,
+            weight = ?,
+            style = ?,
+            description = ?,
+            images = ?,
+            specifications = ?,
+            featured = ?,
+            video = ?
+           WHERE id = ?
+        `).run(
+          req.body.name,
+          req.body.original_price_inr || null,
+          req.body.price_inr,
+          req.body.original_price_usd || null,
+          req.body.price_usd,
+          req.body.original_price_eur || null,
+          req.body.price_eur,
+          req.body.grade,
+          req.body.willow_type,
+          req.body.weight,
+          req.body.style,
+          req.body.description,
+          JSON.stringify(imagePaths),
+          req.body.specifications,
+          req.body.featured === "1" ? 1 : 0,
+          videoPath,
+          id
+        );
+      }
+
+      res.json({ message: "Updated successfully" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Update failed" });
+    }
+  }
+);
+
   // ---------------- FRONTEND ----------------
 
   if (!isProduction) {
