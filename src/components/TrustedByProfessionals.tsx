@@ -426,17 +426,17 @@ const videos = [
   {
     id: 1,
     name: "Hard Pressing",
-    video: "/videos/hard-pressing.mp4",
+    video: "/videos/hard-pressing.MP4",
   },
   {
     id: 2,
     name: "Expert's Trust",
-    video: "/videos/trusted-by-professional.mp4",
+    video: "/videos/trusted-by-professional.MP4",
   },
   {
     id: 3,
     name: "Sixer",
-    video: "/videos/six.mp4",
+    video: "/videos/six.MP4",
   },
   {
     id: 4,
@@ -446,7 +446,7 @@ const videos = [
   {
     id: 5,
     name: "Trusted by professional",
-    video: "/videos/trusted-by-professional-2.mp4",
+    video: "/videos/trusted-by-professional-2.MP4",
   },
 ];
 
