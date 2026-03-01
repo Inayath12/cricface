@@ -418,144 +418,6 @@
 
 // // export default TrustedByProfessionals;
 
-// import { motion, AnimatePresence } from "framer-motion";
-// import { useState, useRef } from "react";
-// import { X } from "lucide-react";
-
-// const videos = [
-//   {
-//     id: 1,
-//     name: "Hard Pressing",
-//     video: "/videos/hard-pressing.mp4",
-//   },
-//   {
-//     id: 2,
-//     name: "Expert's Trust",
-//     video: "/videos/trusted-by-professional.mp4",
-//   },
-//   {
-//     id: 3,
-//     name: "Trusted by professional",
-//     video: "/videos/trusted-by-professional-2.mp4",
-//   },
-//   {
-//     id: 4,
-//     name: "Sixer",
-//     video: "/videos/six.mp4",
-//   },
-//   {
-//     id: 5,
-//     name: "Rocket Ping",
-//     video: "/videos/rocket-ping.MP4",
-//   },
-// ];
-
-// const TrustedByProfessionals = () => {
-//   const [activeVideo, setActiveVideo] = useState<string | null>(null);
-//   const fullVideoRef = useRef<HTMLVideoElement | null>(null);
-
-//   const openVideo = (src: string) => {
-//     setActiveVideo(src);
-//     setTimeout(() => {
-//       if (fullVideoRef.current) {
-//         fullVideoRef.current.muted = false;
-//         fullVideoRef.current.play();
-//       }
-//     }, 200);
-//   };
-
-//   const closeVideo = () => {
-//     if (fullVideoRef.current) fullVideoRef.current.pause();
-//     setActiveVideo(null);
-//   };
-
-//   return (
-//     <section className="py-20 bg-zinc-50 overflow-hidden">
-//       <div className="max-w-7xl mx-auto px-4 mb-12">
-//         <h2 className="text-3xl md:text-4xl font-display font-black text-center">
-//           Trusted by Professionals
-//         </h2>
-//         <p className="text-center text-zinc-400 mt-3">
-//           Real power. Real performance. Real sixes.
-//         </p>
-//       </div>
-
-//       {/* Scroll container */}
-//       <div className="overflow-x-auto no-scrollbar px-4">
-//         <div className="flex gap-8 items-start">
-
-//           {videos.map((item) => (
-//             <motion.div
-//               key={item.id}
-//               whileHover={{ scale: 1.03 }}
-//               onClick={() => openVideo(item.video)}
-//               className="
-//                 flex-shrink-0
-//                 w-[220px]
-//                 sm:w-[250px]
-//                 md:w-[280px]
-//                 lg:w-[300px]
-//                 h-[390px]
-//                 sm:h-[445px]
-//                 md:h-[500px]
-//                 lg:h-[540px]
-//                 rounded-3xl
-//                 overflow-hidden
-//                 bg-black
-//                 shadow-2xl
-//                 cursor-pointer
-//               "
-//             >
-//               <video
-//                 src={item.video}
-//                 autoPlay
-//                 muted
-//                 loop
-//                 playsInline
-//                 className="w-full h-full object-cover"
-//               />
-
-//               <div className="absolute bottom-4 left-4 bg-white/80 px-4 py-1 rounded-full text-sm font-semibold">
-//                 {item.name}
-//               </div>
-//             </motion.div>
-//           ))}
-
-//         </div>
-//       </div>
-
-//       {/* Fullscreen Modal */}
-//       <AnimatePresence>
-//         {activeVideo && (
-//           <motion.div
-//             initial={{ opacity: 0 }}
-//             animate={{ opacity: 1 }}
-//             exit={{ opacity: 0 }}
-//             className="fixed inset-0 bg-black z-50 flex items-center justify-center"
-//           >
-//             <button
-//               onClick={closeVideo}
-//               className="absolute top-6 right-6 text-zinc-900"
-//             >
-//               <X size={30} />
-//             </button>
-
-//             <video
-//               ref={fullVideoRef}
-//               src={activeVideo}
-//               controls
-//               autoPlay
-//               className="max-h-[90vh] max-w-[95vw] object-contain"
-//             />
-//           </motion.div>
-//         )}
-//       </AnimatePresence>
-//     </section>
-//   );
-// };
-
-// export default TrustedByProfessionals;
-
 import { motion, AnimatePresence } from "framer-motion";
 import { useState, useRef } from "react";
 import { X } from "lucide-react";
@@ -573,7 +435,7 @@ const videos = [
   },
   {
     id: 3,
-    name: "Trusted by professionals",
+    name: "Trusted by professional",
     video: "/videos/trusted-by-professional-2.mp4",
   },
   {
@@ -584,7 +446,7 @@ const videos = [
   {
     id: 5,
     name: "Rocket Ping",
-    video: "/videos/rocket-ping.mp4",
+    video: "/videos/rocket-ping.MP4",
   },
 ];
 
@@ -618,19 +480,31 @@ const TrustedByProfessionals = () => {
         </p>
       </div>
 
-      <div className="overflow-x-auto scrollbar-hide px-4">
-        <div className="flex gap-8">
+      {/* Scroll container */}
+      <div className="overflow-x-auto no-scrollbar px-4">
+        <div className="flex gap-8 items-start">
 
           {videos.map((item) => (
             <motion.div
               key={item.id}
               whileHover={{ scale: 1.03 }}
               onClick={() => openVideo(item.video)}
-              className="relative flex-shrink-0
-                w-[230px] sm:w-[260px] md:w-[280px]
-                aspect-[9/16]
-                rounded-3xl overflow-hidden
-                bg-zinc-100 shadow-xl cursor-pointer"
+              className="
+                flex-shrink-0
+                w-[220px]
+                sm:w-[250px]
+                md:w-[280px]
+                lg:w-[300px]
+                h-[390px]
+                sm:h-[445px]
+                md:h-[500px]
+                lg:h-[540px]
+                rounded-3xl
+                overflow-hidden
+                bg-black
+                shadow-2xl
+                cursor-pointer
+              "
             >
               <video
                 src={item.video}
@@ -638,11 +512,10 @@ const TrustedByProfessionals = () => {
                 muted
                 loop
                 playsInline
-                preload="auto"
                 className="w-full h-full object-cover"
               />
 
-              <div className="absolute bottom-4 left-4 bg-white/80 backdrop-blur-sm px-4 py-1 rounded-full text-xs font-semibold">
+              <div className="absolute bottom-4 left-4 bg-white/80 px-4 py-1 rounded-full text-sm font-semibold">
                 {item.name}
               </div>
             </motion.div>
@@ -651,17 +524,18 @@ const TrustedByProfessionals = () => {
         </div>
       </div>
 
+      {/* Fullscreen Modal */}
       <AnimatePresence>
         {activeVideo && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center"
+            className="fixed inset-0 bg-black z-50 flex items-center justify-center"
           >
             <button
               onClick={closeVideo}
-              className="absolute top-6 right-6 text-white"
+              className="absolute top-6 right-6 text-zinc-900"
             >
               <X size={30} />
             </button>
@@ -681,3 +555,129 @@ const TrustedByProfessionals = () => {
 };
 
 export default TrustedByProfessionals;
+
+// import { motion, AnimatePresence } from "framer-motion";
+// import { useState, useRef } from "react";
+// import { X } from "lucide-react";
+
+// const videos = [
+//   {
+//     id: 1,
+//     name: "Hard Pressing",
+//     video: "/videos/hard-pressing.mp4",
+//   },
+//   {
+//     id: 2,
+//     name: "Expert's Trust",
+//     video: "/videos/trusted-by-professional.mp4",
+//   },
+//   {
+//     id: 3,
+//     name: "Trusted by professionals",
+//     video: "/videos/trusted-by-professional-2.mp4",
+//   },
+//   {
+//     id: 4,
+//     name: "Sixer",
+//     video: "/videos/six.mp4",
+//   },
+//   {
+//     id: 5,
+//     name: "Rocket Ping",
+//     video: "/videos/rocket-ping.mp4",
+//   },
+// ];
+
+// const TrustedByProfessionals = () => {
+//   const [activeVideo, setActiveVideo] = useState<string | null>(null);
+//   const fullVideoRef = useRef<HTMLVideoElement | null>(null);
+
+//   const openVideo = (src: string) => {
+//     setActiveVideo(src);
+//     setTimeout(() => {
+//       if (fullVideoRef.current) {
+//         fullVideoRef.current.muted = false;
+//         fullVideoRef.current.play();
+//       }
+//     }, 200);
+//   };
+
+//   const closeVideo = () => {
+//     if (fullVideoRef.current) fullVideoRef.current.pause();
+//     setActiveVideo(null);
+//   };
+
+//   return (
+//     <section className="py-20 bg-zinc-50 overflow-hidden">
+//       <div className="max-w-7xl mx-auto px-4 mb-12">
+//         <h2 className="text-3xl md:text-4xl font-display font-black text-center">
+//           Trusted by Professionals
+//         </h2>
+//         <p className="text-center text-zinc-400 mt-3">
+//           Real power. Real performance. Real sixes.
+//         </p>
+//       </div>
+
+//       <div className="overflow-x-auto scrollbar-hide px-4">
+//         <div className="flex gap-8">
+
+//           {videos.map((item) => (
+//             <motion.div
+//               key={item.id}
+//               whileHover={{ scale: 1.03 }}
+//               onClick={() => openVideo(item.video)}
+//               className="relative flex-shrink-0
+//                 w-[230px] sm:w-[260px] md:w-[280px]
+//                 aspect-[9/16]
+//                 rounded-3xl overflow-hidden
+//                 bg-zinc-100 shadow-xl cursor-pointer"
+//             >
+//               <video
+//                 src={item.video}
+//                 autoPlay
+//                 muted
+//                 loop
+//                 playsInline
+//                 preload="auto"
+//                 className="w-full h-full object-cover"
+//               />
+
+//               <div className="absolute bottom-4 left-4 bg-white/80 backdrop-blur-sm px-4 py-1 rounded-full text-xs font-semibold">
+//                 {item.name}
+//               </div>
+//             </motion.div>
+//           ))}
+
+//         </div>
+//       </div>
+
+//       <AnimatePresence>
+//         {activeVideo && (
+//           <motion.div
+//             initial={{ opacity: 0 }}
+//             animate={{ opacity: 1 }}
+//             exit={{ opacity: 0 }}
+//             className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center"
+//           >
+//             <button
+//               onClick={closeVideo}
+//               className="absolute top-6 right-6 text-white"
+//             >
+//               <X size={30} />
+//             </button>
+
+//             <video
+//               ref={fullVideoRef}
+//               src={activeVideo}
+//               controls
+//               autoPlay
+//               className="max-h-[90vh] max-w-[95vw] object-contain"
+//             />
+//           </motion.div>
+//         )}
+//       </AnimatePresence>
+//     </section>
+//   );
+// };
+
+// export default TrustedByProfessionals;
