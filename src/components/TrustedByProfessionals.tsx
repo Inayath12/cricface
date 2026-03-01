@@ -729,7 +729,7 @@ const TrustedByProfessionals = () => {
   const scrollLeft = useRef(0);
   const dragDistance = useRef(0);
 
-  const onMouseDown = (e: React.MouseEvent) => {
+  const onMouseDown = (e: MouseEvent) => {
     isDragging.current = true;
     dragDistance.current = 0;
     startX.current = e.pageX - (scrollRef.current?.offsetLeft || 0);
@@ -737,7 +737,7 @@ const TrustedByProfessionals = () => {
     if (scrollRef.current) scrollRef.current.style.cursor = "grabbing";
   };
 
-  const onMouseMove = (e: React.MouseEvent) => {
+  const onMouseMove = (e: MouseEvent) => {
     if (!isDragging.current || !scrollRef.current) return;
     e.preventDefault();
     const x = e.pageX - scrollRef.current.offsetLeft;
