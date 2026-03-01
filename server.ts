@@ -924,11 +924,13 @@ app.post("/api/admin/login", (req, res) => {
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static(path.join(__dirname, "dist")));
-    app.get("*", (req, res) => {
-      res.sendFile(path.join(__dirname, "dist", "index.html"));
-    });
-  }
+  // __dirname points to "dist" when compiled, so go up one level
+  const clientDistPath = path.join(__dirname, "../dist");
+  app.use(express.static(clientDistPath));
+  app.get("*", (req, res) => {
+    res.sendFile(path.join(clientDistPath, "index.html"));
+  });
+}
 
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
