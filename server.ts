@@ -695,6 +695,8 @@ import dotenv from "dotenv";
 import multer from "multer";
 import fs from "fs";
 import pkg from "pg";
+import { Request, Response } from "express";
+
 
 dotenv.config();
 
@@ -773,7 +775,7 @@ async function startServer() {
   app.use("/", express.static(path.join(__dirname, "public")));
 
   // ADMIN LOGIN
-app.post("/api/admin/login", (req, res) => {
+app.post("/api/admin/login", (req: Request, res: Response) => {
   const { username, password } = req.body;
 
   const adminUser = process.env.ADMIN_USERNAME || "admin";
@@ -811,7 +813,8 @@ app.post("/api/admin/login", (req, res) => {
   //     specifications: p.specifications ? JSON.parse(p.specifications) : {}
   //   })));
   // });
-  app.get("/api/products", async (req, res) => {
+  app.get("/api/products", async (req: Request, res: Response) => {
+  // app.get("/api/products", async (req, res) => {
   try {
     if (isProduction) {
       const result = await pool.query(
@@ -859,7 +862,7 @@ app.post("/api/admin/login", (req, res) => {
   //   });
   // });
 
-  app.get("/api/products/:id", async (req, res) => {
+  app.get("/api/products/:id", async (req: Request, res: Response) => {
   try {
     if (isProduction) {
       const result = await pool.query(
@@ -1078,7 +1081,7 @@ app.post("/api/admin/login", (req, res) => {
   }
 );
 
-  app.delete("/api/products/:id", authenticateToken, async (req, res) => {
+  app.delete("/api/products/:id", authenticateToken, async (req: Request, res: Response) => {
   try {
     if (isProduction) {
       await pool.query("DELETE FROM products WHERE id = $1", [
