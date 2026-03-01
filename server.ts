@@ -714,17 +714,31 @@ try { db.exec(`ALTER TABLE products ADD COLUMN original_price_eur REAL`); } catc
 try { db.exec(`ALTER TABLE products ADD COLUMN featured INTEGER DEFAULT 0`); } catch {}
 try { db.exec(`ALTER TABLE products ADD COLUMN video TEXT`); } catch {}
 
+// const storage = multer.diskStorage({
+//   destination: (req, file, cb) => {
+//     if (file.mimetype.startsWith("video"))
+//       cb(null, "uploads/videos/");
+//     else
+//       cb(null, "uploads/images/");
+//   },
+//   filename: (req, file, cb) => {
+//     cb(null, Date.now() + "-" + file.originalname);
+//   }
+// });
+
 const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    if (file.mimetype.startsWith("video"))
+  destination: (req: any, file: any, cb: any) => {
+    if (file.mimetype.startsWith("video")) {
       cb(null, "uploads/videos/");
-    else
+    } else {
       cb(null, "uploads/images/");
+    }
   },
-  filename: (req, file, cb) => {
+  filename: (req: any, file: any, cb: any) => {
     cb(null, Date.now() + "-" + file.originalname);
   }
 });
+
 
 const upload = multer({
   storage,
