@@ -1,11 +1,220 @@
+// // // // // // // // import express from "express";
+// // // // // // // // import { createServer as createViteServer } from "vite";
+// // // // // // // // import Database from "better-sqlite3";
+// // // // // // // // import jwt from "jsonwebtoken";
+// // // // // // // // import bcrypt from "bcryptjs";
+// // // // // // // // import path from "path";
+// // // // // // // // import { fileURLToPath } from "url";
+// // // // // // // // import dotenv from "dotenv";
+
+// // // // // // // // dotenv.config();
+
+// // // // // // // // const __filename = fileURLToPath(import.meta.url);
+// // // // // // // // const __dirname = path.dirname(__filename);
+
+// // // // // // // // const db = new Database("cricface.db");
+
+// // // // // // // // // Initialize Database
+// // // // // // // // db.exec(`
+// // // // // // // //   CREATE TABLE IF NOT EXISTS products (
+// // // // // // // //     id INTEGER PRIMARY KEY AUTOINCREMENT,
+// // // // // // // //     name TEXT NOT NULL,
+// // // // // // // //     price_inr REAL NOT NULL,
+// // // // // // // //     price_usd REAL NOT NULL,
+// // // // // // // //     price_eur REAL NOT NULL,
+// // // // // // // //     grade TEXT,
+// // // // // // // //     willow_type TEXT,
+// // // // // // // //     weight TEXT,
+// // // // // // // //     style TEXT,
+// // // // // // // //     description TEXT,
+// // // // // // // //     images TEXT, -- JSON string array
+// // // // // // // //     specifications TEXT, -- JSON object
+// // // // // // // //     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+// // // // // // // //   );
+
+// // // // // // // //   CREATE TABLE IF NOT EXISTS inquiries (
+// // // // // // // //     id INTEGER PRIMARY KEY AUTOINCREMENT,
+// // // // // // // //     name TEXT NOT NULL,
+// // // // // // // //     contact TEXT NOT NULL,
+// // // // // // // //     email TEXT,
+// // // // // // // //     product_name TEXT,
+// // // // // // // //     message TEXT,
+// // // // // // // //     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+// // // // // // // //   );
+// // // // // // // // `);
+
+// // // // // // // // // Seed initial data if empty
+// // // // // // // // const productCount = db.prepare("SELECT COUNT(*) as count FROM products").get() as { count: number };
+// // // // // // // // if (productCount.count === 0) {
+// // // // // // // //   const seedProducts = [
+// // // // // // // //     {
+// // // // // // // //       name: "Cricface Emperor Edition",
+// // // // // // // //       price_inr: 45000,
+// // // // // // // //       price_usd: 550,
+// // // // // // // //       price_eur: 510,
+// // // // // // // //       grade: "Grade 1+",
+// // // // // // // //       willow_type: "English Willow",
+// // // // // // // //       weight: "2lb 8oz",
+// // // // // // // //       style: "Player Profile",
+// // // // // // // //       description: "The pinnacle of craftsmanship. Hand-selected English Willow with 10+ straight grains.",
+// // // // // // // //       images: JSON.stringify(["https://picsum.photos/seed/bat1/800/1200", "https://picsum.photos/seed/bat1b/800/1200"]),
+// // // // // // // //       specifications: JSON.stringify({ "Edge": "40mm", "Spine": "65mm", "Toe": "25mm", "Handle": "Semi-oval" })
+// // // // // // // //     },
+// // // // // // // //     {
+// // // // // // // //       name: "Cricface Warrior Pro",
+// // // // // // // //       price_inr: 25000,
+// // // // // // // //       price_usd: 300,
+// // // // // // // //       price_eur: 280,
+// // // // // // // //       grade: "Grade 2",
+// // // // // // // //       willow_type: "English Willow",
+// // // // // // // //       weight: "2lb 9oz",
+// // // // // // // //       style: "Aggressive",
+// // // // // // // //       description: "Designed for the modern power hitter. Massive edges and a high swell.",
+// // // // // // // //       images: JSON.stringify(["https://picsum.photos/seed/bat2/800/1200"]),
+// // // // // // // //       specifications: JSON.stringify({ "Edge": "38mm", "Spine": "62mm", "Toe": "22mm", "Handle": "Round" })
+// // // // // // // //     },
+// // // // // // // //     {
+// // // // // // // //       name: "Cricface Kashmir Gold",
+// // // // // // // //       price_inr: 8500,
+// // // // // // // //       price_usd: 105,
+// // // // // // // //       price_eur: 95,
+// // // // // // // //       grade: "Premium",
+// // // // // // // //       willow_type: "Kashmir Willow",
+// // // // // // // //       weight: "2lb 10oz",
+// // // // // // // //       style: "Classic",
+// // // // // // // //       description: "The best Kashmir Willow bat in the market. Durable and high performing.",
+// // // // // // // //       images: JSON.stringify(["https://picsum.photos/seed/bat3/800/1200"]),
+// // // // // // // //       specifications: JSON.stringify({ "Edge": "36mm", "Spine": "60mm", "Toe": "20mm", "Handle": "Round" })
+// // // // // // // //     }
+// // // // // // // //   ];
+
+// // // // // // // //   const insert = db.prepare(`
+// // // // // // // //     INSERT INTO products (name, price_inr, price_usd, price_eur, grade, willow_type, weight, style, description, images, specifications)
+// // // // // // // //     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+// // // // // // // //   `);
+
+// // // // // // // //   for (const p of seedProducts) {
+// // // // // // // //     insert.run(p.name, p.price_inr, p.price_usd, p.price_eur, p.grade, p.willow_type, p.weight, p.style, p.description, p.images, p.specifications);
+// // // // // // // //   }
+// // // // // // // // }
+
+// // // // // // // // async function startServer() {
+// // // // // // // //   const app = express();
+// // // // // // // //   const PORT = 3000;
+
+// // // // // // // //   app.use(express.json());
+
+// // // // // // // //   // Auth Middleware
+// // // // // // // //   const authenticateToken = (req: any, res: any, next: any) => {
+// // // // // // // //     const authHeader = req.headers['authorization'];
+// // // // // // // //     const token = authHeader && authHeader.split(' ')[1];
+// // // // // // // //     if (!token) return res.sendStatus(401);
+
+// // // // // // // //     jwt.verify(token, process.env.JWT_SECRET || "secret", (err: any, user: any) => {
+// // // // // // // //       if (err) return res.sendStatus(403);
+// // // // // // // //       req.user = user;
+// // // // // // // //       next();
+// // // // // // // //     });
+// // // // // // // //   };
+
+// // // // // // // //   // API Routes
+// // // // // // // //   app.post("/api/admin/login", (req, res) => {
+// // // // // // // //     const { username, password } = req.body;
+// // // // // // // //     const adminUser = process.env.ADMIN_USERNAME || "admin";
+// // // // // // // //     const adminPass = process.env.ADMIN_PASSWORD || "password123";
+
+// // // // // // // //     if (username === adminUser && password === adminPass) {
+// // // // // // // //       const token = jwt.sign({ username }, process.env.JWT_SECRET || "secret", { expiresIn: '24h' });
+// // // // // // // //       return res.json({ token });
+// // // // // // // //     }
+// // // // // // // //     res.status(401).json({ message: "Invalid credentials" });
+// // // // // // // //   });
+
+// // // // // // // //   app.get("/api/products", (req, res) => {
+// // // // // // // //     const products = db.prepare("SELECT * FROM products ORDER BY created_at DESC").all();
+// // // // // // // //     res.json(products.map((p: any) => ({
+// // // // // // // //       ...p,
+// // // // // // // //       images: JSON.parse(p.images),
+// // // // // // // //       specifications: JSON.parse(p.specifications)
+// // // // // // // //     })));
+// // // // // // // //   });
+
+// // // // // // // //   app.get("/api/products/:id", (req, res) => {
+// // // // // // // //     const product = db.prepare("SELECT * FROM products WHERE id = ?").get(req.params.id) as any;
+// // // // // // // //     if (!product) return res.status(404).json({ message: "Product not found" });
+// // // // // // // //     res.json({
+// // // // // // // //       ...product,
+// // // // // // // //       images: JSON.parse(product.images),
+// // // // // // // //       specifications: JSON.parse(product.specifications)
+// // // // // // // //     });
+// // // // // // // //   });
+
+// // // // // // // //   app.post("/api/products", authenticateToken, (req, res) => {
+// // // // // // // //     const { name, price_inr, price_usd, price_eur, grade, willow_type, weight, style, description, images, specifications } = req.body;
+// // // // // // // //     const result = db.prepare(`
+// // // // // // // //       INSERT INTO products (name, price_inr, price_usd, price_eur, grade, willow_type, weight, style, description, images, specifications)
+// // // // // // // //       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+// // // // // // // //     `).run(name, price_inr, price_usd, price_eur, grade, willow_type, weight, style, description, JSON.stringify(images), JSON.stringify(specifications));
+// // // // // // // //     res.json({ id: result.lastInsertRowid });
+// // // // // // // //   });
+
+// // // // // // // //   app.put("/api/products/:id", authenticateToken, (req, res) => {
+// // // // // // // //     const { name, price_inr, price_usd, price_eur, grade, willow_type, weight, style, description, images, specifications } = req.body;
+// // // // // // // //     db.prepare(`
+// // // // // // // //       UPDATE products SET 
+// // // // // // // //         name = ?, price_inr = ?, price_usd = ?, price_eur = ?, 
+// // // // // // // //         grade = ?, willow_type = ?, weight = ?, style = ?, 
+// // // // // // // //         description = ?, images = ?, specifications = ?
+// // // // // // // //       WHERE id = ?
+// // // // // // // //     `).run(name, price_inr, price_usd, price_eur, grade, willow_type, weight, style, description, JSON.stringify(images), JSON.stringify(specifications), req.params.id);
+// // // // // // // //     res.json({ message: "Updated successfully" });
+// // // // // // // //   });
+
+// // // // // // // //   app.delete("/api/products/:id", authenticateToken, (req, res) => {
+// // // // // // // //     db.prepare("DELETE FROM products WHERE id = ?").run(req.params.id);
+// // // // // // // //     res.json({ message: "Deleted successfully" });
+// // // // // // // //   });
+
+// // // // // // // //   app.post("/api/inquiries", (req, res) => {
+// // // // // // // //     const { name, contact, email, product_name, message } = req.body;
+// // // // // // // //     db.prepare(`
+// // // // // // // //       INSERT INTO inquiries (name, contact, email, product_name, message)
+// // // // // // // //       VALUES (?, ?, ?, ?, ?)
+// // // // // // // //     `).run(name, contact, email, product_name, message);
+// // // // // // // //     res.json({ message: "Inquiry received" });
+// // // // // // // //   });
+
+// // // // // // // //   // Vite middleware for development
+// // // // // // // //   if (process.env.NODE_ENV !== "production") {
+// // // // // // // //     const vite = await createViteServer({
+// // // // // // // //       server: { middlewareMode: true },
+// // // // // // // //       appType: "spa",
+// // // // // // // //     });
+// // // // // // // //     app.use(vite.middlewares);
+// // // // // // // //   } else {
+// // // // // // // //     app.use(express.static(path.join(__dirname, "dist")));
+// // // // // // // //     app.get("*", (req, res) => {
+// // // // // // // //       res.sendFile(path.join(__dirname, "dist", "index.html"));
+// // // // // // // //     });
+// // // // // // // //   }
+
+// // // // // // // //   app.listen(PORT, "0.0.0.0", () => {
+// // // // // // // //     console.log(`Server running on http://localhost:${PORT}`);
+// // // // // // // //   });
+// // // // // // // // }
+
+// // // // // // // // startServer();
+
+
 // // // // // // // import express from "express";
 // // // // // // // import { createServer as createViteServer } from "vite";
 // // // // // // // import Database from "better-sqlite3";
 // // // // // // // import jwt from "jsonwebtoken";
-// // // // // // // import bcrypt from "bcryptjs";
 // // // // // // // import path from "path";
 // // // // // // // import { fileURLToPath } from "url";
 // // // // // // // import dotenv from "dotenv";
+// // // // // // // import multer from "multer";
+// // // // // // // import fs from "fs";
 
 // // // // // // // dotenv.config();
 
@@ -14,7 +223,25 @@
 
 // // // // // // // const db = new Database("cricface.db");
 
-// // // // // // // // Initialize Database
+// // // // // // // const uploadDir = path.join(__dirname, "uploads");
+// // // // // // // if (!fs.existsSync(uploadDir)) {
+// // // // // // //   fs.mkdirSync(uploadDir);
+// // // // // // // }
+
+// // // // // // // const storage = multer.diskStorage({
+// // // // // // //   destination: (req, file, cb) => {
+// // // // // // //     cb(null, uploadDir);
+// // // // // // //   },
+// // // // // // //   filename: (req, file, cb) => {
+// // // // // // //     const uniqueName = Date.now() + "-" + file.originalname.replace(/\s+/g, "");
+// // // // // // //     cb(null, uniqueName);
+// // // // // // //   }
+// // // // // // // });
+
+// // // // // // // const upload = multer({ storage });
+
+// // // // // // // // ================= DATABASE =================
+
 // // // // // // // db.exec(`
 // // // // // // //   CREATE TABLE IF NOT EXISTS products (
 // // // // // // //     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,146 +254,148 @@
 // // // // // // //     weight TEXT,
 // // // // // // //     style TEXT,
 // // // // // // //     description TEXT,
-// // // // // // //     images TEXT, -- JSON string array
-// // // // // // //     specifications TEXT, -- JSON object
-// // // // // // //     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-// // // // // // //   );
-
-// // // // // // //   CREATE TABLE IF NOT EXISTS inquiries (
-// // // // // // //     id INTEGER PRIMARY KEY AUTOINCREMENT,
-// // // // // // //     name TEXT NOT NULL,
-// // // // // // //     contact TEXT NOT NULL,
-// // // // // // //     email TEXT,
-// // // // // // //     product_name TEXT,
-// // // // // // //     message TEXT,
+// // // // // // //     images TEXT,
+// // // // // // //     specifications TEXT,
+// // // // // // //     featured INTEGER DEFAULT 0,
 // // // // // // //     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 // // // // // // //   );
 // // // // // // // `);
-
-// // // // // // // // Seed initial data if empty
-// // // // // // // const productCount = db.prepare("SELECT COUNT(*) as count FROM products").get() as { count: number };
-// // // // // // // if (productCount.count === 0) {
-// // // // // // //   const seedProducts = [
-// // // // // // //     {
-// // // // // // //       name: "Cricface Emperor Edition",
-// // // // // // //       price_inr: 45000,
-// // // // // // //       price_usd: 550,
-// // // // // // //       price_eur: 510,
-// // // // // // //       grade: "Grade 1+",
-// // // // // // //       willow_type: "English Willow",
-// // // // // // //       weight: "2lb 8oz",
-// // // // // // //       style: "Player Profile",
-// // // // // // //       description: "The pinnacle of craftsmanship. Hand-selected English Willow with 10+ straight grains.",
-// // // // // // //       images: JSON.stringify(["https://picsum.photos/seed/bat1/800/1200", "https://picsum.photos/seed/bat1b/800/1200"]),
-// // // // // // //       specifications: JSON.stringify({ "Edge": "40mm", "Spine": "65mm", "Toe": "25mm", "Handle": "Semi-oval" })
-// // // // // // //     },
-// // // // // // //     {
-// // // // // // //       name: "Cricface Warrior Pro",
-// // // // // // //       price_inr: 25000,
-// // // // // // //       price_usd: 300,
-// // // // // // //       price_eur: 280,
-// // // // // // //       grade: "Grade 2",
-// // // // // // //       willow_type: "English Willow",
-// // // // // // //       weight: "2lb 9oz",
-// // // // // // //       style: "Aggressive",
-// // // // // // //       description: "Designed for the modern power hitter. Massive edges and a high swell.",
-// // // // // // //       images: JSON.stringify(["https://picsum.photos/seed/bat2/800/1200"]),
-// // // // // // //       specifications: JSON.stringify({ "Edge": "38mm", "Spine": "62mm", "Toe": "22mm", "Handle": "Round" })
-// // // // // // //     },
-// // // // // // //     {
-// // // // // // //       name: "Cricface Kashmir Gold",
-// // // // // // //       price_inr: 8500,
-// // // // // // //       price_usd: 105,
-// // // // // // //       price_eur: 95,
-// // // // // // //       grade: "Premium",
-// // // // // // //       willow_type: "Kashmir Willow",
-// // // // // // //       weight: "2lb 10oz",
-// // // // // // //       style: "Classic",
-// // // // // // //       description: "The best Kashmir Willow bat in the market. Durable and high performing.",
-// // // // // // //       images: JSON.stringify(["https://picsum.photos/seed/bat3/800/1200"]),
-// // // // // // //       specifications: JSON.stringify({ "Edge": "36mm", "Spine": "60mm", "Toe": "20mm", "Handle": "Round" })
-// // // // // // //     }
-// // // // // // //   ];
-
-// // // // // // //   const insert = db.prepare(`
-// // // // // // //     INSERT INTO products (name, price_inr, price_usd, price_eur, grade, willow_type, weight, style, description, images, specifications)
-// // // // // // //     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-// // // // // // //   `);
-
-// // // // // // //   for (const p of seedProducts) {
-// // // // // // //     insert.run(p.name, p.price_inr, p.price_usd, p.price_eur, p.grade, p.willow_type, p.weight, p.style, p.description, p.images, p.specifications);
-// // // // // // //   }
-// // // // // // // }
 
 // // // // // // // async function startServer() {
 // // // // // // //   const app = express();
 // // // // // // //   const PORT = 3000;
 
-// // // // // // //   app.use(express.json());
+// // // // // // //   app.use("/uploads", express.static(uploadDir));
 
-// // // // // // //   // Auth Middleware
+// // // // // // //   // IMPORTANT: increase limit for non-file routes
+// // // // // // //   app.use(express.json({ limit: "10mb" }));
+// // // // // // //   app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+
 // // // // // // //   const authenticateToken = (req: any, res: any, next: any) => {
-// // // // // // //     const authHeader = req.headers['authorization'];
-// // // // // // //     const token = authHeader && authHeader.split(' ')[1];
+// // // // // // //     const authHeader = req.headers["authorization"];
+// // // // // // //     const token = authHeader && authHeader.split(" ")[1];
 // // // // // // //     if (!token) return res.sendStatus(401);
 
-// // // // // // //     jwt.verify(token, process.env.JWT_SECRET || "secret", (err: any, user: any) => {
+// // // // // // //     jwt.verify(token, process.env.JWT_SECRET || "secret", (err: any) => {
 // // // // // // //       if (err) return res.sendStatus(403);
-// // // // // // //       req.user = user;
 // // // // // // //       next();
 // // // // // // //     });
 // // // // // // //   };
 
-// // // // // // //   // API Routes
-// // // // // // //   app.post("/api/admin/login", (req, res) => {
-// // // // // // //     const { username, password } = req.body;
-// // // // // // //     const adminUser = process.env.ADMIN_USERNAME || "admin";
-// // // // // // //     const adminPass = process.env.ADMIN_PASSWORD || "password123";
-
-// // // // // // //     if (username === adminUser && password === adminPass) {
-// // // // // // //       const token = jwt.sign({ username }, process.env.JWT_SECRET || "secret", { expiresIn: '24h' });
-// // // // // // //       return res.json({ token });
-// // // // // // //     }
-// // // // // // //     res.status(401).json({ message: "Invalid credentials" });
-// // // // // // //   });
+// // // // // // //   // ================= PRODUCTS =================
 
 // // // // // // //   app.get("/api/products", (req, res) => {
 // // // // // // //     const products = db.prepare("SELECT * FROM products ORDER BY created_at DESC").all();
-// // // // // // //     res.json(products.map((p: any) => ({
-// // // // // // //       ...p,
-// // // // // // //       images: JSON.parse(p.images),
-// // // // // // //       specifications: JSON.parse(p.specifications)
-// // // // // // //     })));
+// // // // // // //     res.json(
+// // // // // // //       products.map((p: any) => ({
+// // // // // // //         ...p,
+// // // // // // //         images: JSON.parse(p.images || "[]"),
+// // // // // // //         specifications: JSON.parse(p.specifications || "{}"),
+// // // // // // //         featured: Boolean(p.featured)
+// // // // // // //       }))
+// // // // // // //     );
 // // // // // // //   });
 
 // // // // // // //   app.get("/api/products/:id", (req, res) => {
-// // // // // // //     const product = db.prepare("SELECT * FROM products WHERE id = ?").get(req.params.id) as any;
-// // // // // // //     if (!product) return res.status(404).json({ message: "Product not found" });
+// // // // // // //     const product = db
+// // // // // // //       .prepare("SELECT * FROM products WHERE id = ?")
+// // // // // // //       .get(req.params.id) as any;
+
+// // // // // // //     if (!product) {
+// // // // // // //       return res.status(404).json({ message: "Product not found" });
+// // // // // // //     }
+
 // // // // // // //     res.json({
 // // // // // // //       ...product,
-// // // // // // //       images: JSON.parse(product.images),
-// // // // // // //       specifications: JSON.parse(product.specifications)
+// // // // // // //       images: JSON.parse(product.images || "[]"),
+// // // // // // //       specifications: JSON.parse(product.specifications || "{}"),
+// // // // // // //       featured: Boolean(product.featured)
 // // // // // // //     });
 // // // // // // //   });
 
-// // // // // // //   app.post("/api/products", authenticateToken, (req, res) => {
-// // // // // // //     const { name, price_inr, price_usd, price_eur, grade, willow_type, weight, style, description, images, specifications } = req.body;
+
+// // // // // // //   app.post("/api/products", authenticateToken, upload.array("images"), (req, res) => {
+// // // // // // //     const {
+// // // // // // //       name,
+// // // // // // //       price_inr,
+// // // // // // //       price_usd,
+// // // // // // //       price_eur,
+// // // // // // //       grade,
+// // // // // // //       willow_type,
+// // // // // // //       weight,
+// // // // // // //       style,
+// // // // // // //       description,
+// // // // // // //       featured
+// // // // // // //     } = req.body;
+
+// // // // // // //     const imagePaths = (req.files as Express.Multer.File[] || []).map(
+// // // // // // //       file => `/uploads/${file.filename}`
+// // // // // // //     );
+
 // // // // // // //     const result = db.prepare(`
-// // // // // // //       INSERT INTO products (name, price_inr, price_usd, price_eur, grade, willow_type, weight, style, description, images, specifications)
-// // // // // // //       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-// // // // // // //     `).run(name, price_inr, price_usd, price_eur, grade, willow_type, weight, style, description, JSON.stringify(images), JSON.stringify(specifications));
+// // // // // // //       INSERT INTO products (
+// // // // // // //         name, price_inr, price_usd, price_eur,
+// // // // // // //         grade, willow_type, weight, style,
+// // // // // // //         description, images, specifications, featured
+// // // // // // //       )
+// // // // // // //       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+// // // // // // //     `).run(
+// // // // // // //       name,
+// // // // // // //       price_inr,
+// // // // // // //       price_usd,
+// // // // // // //       price_eur,
+// // // // // // //       grade,
+// // // // // // //       willow_type,
+// // // // // // //       weight,
+// // // // // // //       style,
+// // // // // // //       description,
+// // // // // // //       JSON.stringify(imagePaths),
+// // // // // // //       JSON.stringify({}),
+// // // // // // //       featured === "1" ? 1 : 0
+// // // // // // //     );
+
 // // // // // // //     res.json({ id: result.lastInsertRowid });
 // // // // // // //   });
 
-// // // // // // //   app.put("/api/products/:id", authenticateToken, (req, res) => {
-// // // // // // //     const { name, price_inr, price_usd, price_eur, grade, willow_type, weight, style, description, images, specifications } = req.body;
+// // // // // // //   app.put("/api/products/:id", authenticateToken, upload.array("images"), (req, res) => {
+// // // // // // //     const {
+// // // // // // //       name,
+// // // // // // //       price_inr,
+// // // // // // //       price_usd,
+// // // // // // //       price_eur,
+// // // // // // //       grade,
+// // // // // // //       willow_type,
+// // // // // // //       weight,
+// // // // // // //       style,
+// // // // // // //       description,
+// // // // // // //       featured
+// // // // // // //     } = req.body;
+
+// // // // // // //     const imagePaths = (req.files as Express.Multer.File[] || []).map(
+// // // // // // //       file => `/uploads/${file.filename}`
+// // // // // // //     );
+
 // // // // // // //     db.prepare(`
-// // // // // // //       UPDATE products SET 
-// // // // // // //         name = ?, price_inr = ?, price_usd = ?, price_eur = ?, 
-// // // // // // //         grade = ?, willow_type = ?, weight = ?, style = ?, 
-// // // // // // //         description = ?, images = ?, specifications = ?
+// // // // // // //       UPDATE products SET
+// // // // // // //         name = ?, price_inr = ?, price_usd = ?, price_eur = ?,
+// // // // // // //         grade = ?, willow_type = ?, weight = ?, style = ?,
+// // // // // // //         description = ?, images = ?, featured = ?
 // // // // // // //       WHERE id = ?
-// // // // // // //     `).run(name, price_inr, price_usd, price_eur, grade, willow_type, weight, style, description, JSON.stringify(images), JSON.stringify(specifications), req.params.id);
+// // // // // // //     `).run(
+// // // // // // //       name,
+// // // // // // //       price_inr,
+// // // // // // //       price_usd,
+// // // // // // //       price_eur,
+// // // // // // //       grade,
+// // // // // // //       willow_type,
+// // // // // // //       weight,
+// // // // // // //       style,
+// // // // // // //       description,
+// // // // // // //       JSON.stringify(imagePaths),
+// // // // // // //       featured === "1" ? 1 : 0,
+// // // // // // //       req.params.id
+// // // // // // //     );
+
 // // // // // // //     res.json({ message: "Updated successfully" });
 // // // // // // //   });
 
@@ -175,34 +404,42 @@
 // // // // // // //     res.json({ message: "Deleted successfully" });
 // // // // // // //   });
 
-// // // // // // //   app.post("/api/inquiries", (req, res) => {
-// // // // // // //     const { name, contact, email, product_name, message } = req.body;
-// // // // // // //     db.prepare(`
-// // // // // // //       INSERT INTO inquiries (name, contact, email, product_name, message)
-// // // // // // //       VALUES (?, ?, ?, ?, ?)
-// // // // // // //     `).run(name, contact, email, product_name, message);
-// // // // // // //     res.json({ message: "Inquiry received" });
+// // // // // // //   // ================= ADMIN LOGIN =================
+
+// // // // // // // app.post("/api/admin/login", (req, res) => {
+// // // // // // //   const { username, password } = req.body;
+
+// // // // // // //   const adminUser = process.env.ADMIN_USERNAME || "admin";
+// // // // // // //   const adminPass = process.env.ADMIN_PASSWORD || "password123";
+
+// // // // // // //   if (username === adminUser && password === adminPass) {
+// // // // // // //     const token = jwt.sign(
+// // // // // // //       { username },
+// // // // // // //       process.env.JWT_SECRET || "secret",
+// // // // // // //       { expiresIn: "24h" }
+// // // // // // //     );
+
+// // // // // // //     return res.json({ token });
+// // // // // // //   }
+
+// // // // // // //   res.status(401).json({ message: "Invalid credentials" });
 // // // // // // //   });
 
-// // // // // // //   // Vite middleware for development
+
+// // // // // // //   // ================= VITE =================
+
 // // // // // // //   if (process.env.NODE_ENV !== "production") {
 // // // // // // //     const vite = await createViteServer({
 // // // // // // //       server: { middlewareMode: true },
-// // // // // // //       appType: "spa",
+// // // // // // //       appType: "spa"
 // // // // // // //     });
 // // // // // // //     app.use(vite.middlewares);
-// // // // // // //   } else {
-// // // // // // //     app.use(express.static(path.join(__dirname, "dist")));
-// // // // // // //     app.get("*", (req, res) => {
-// // // // // // //       res.sendFile(path.join(__dirname, "dist", "index.html"));
-// // // // // // //     });
 // // // // // // //   }
 
-// // // // // // //   app.listen(PORT, "0.0.0.0", () => {
+// // // // // // //   app.listen(PORT, () => {
 // // // // // // //     console.log(`Server running on http://localhost:${PORT}`);
 // // // // // // //   });
 // // // // // // // }
-
 // // // // // // // startServer();
 
 
@@ -229,18 +466,14 @@
 // // // // // // }
 
 // // // // // // const storage = multer.diskStorage({
-// // // // // //   destination: (req, file, cb) => {
-// // // // // //     cb(null, uploadDir);
-// // // // // //   },
-// // // // // //   filename: (req, file, cb) => {
-// // // // // //     const uniqueName = Date.now() + "-" + file.originalname.replace(/\s+/g, "");
-// // // // // //     cb(null, uniqueName);
+// // // // // //   destination: (_, __, cb) => cb(null, uploadDir),
+// // // // // //   filename: (_, file, cb) => {
+// // // // // //     const unique = Date.now() + "-" + file.originalname.replace(/\s+/g, "");
+// // // // // //     cb(null, unique);
 // // // // // //   }
 // // // // // // });
 
 // // // // // // const upload = multer({ storage });
-
-// // // // // // // ================= DATABASE =================
 
 // // // // // // db.exec(`
 // // // // // //   CREATE TABLE IF NOT EXISTS products (
@@ -266,10 +499,23 @@
 // // // // // //   const PORT = 3000;
 
 // // // // // //   app.use("/uploads", express.static(uploadDir));
-
-// // // // // //   // IMPORTANT: increase limit for non-file routes
 // // // // // //   app.use(express.json({ limit: "10mb" }));
-// // // // // //   app.use(express.urlencoded({ extended: true, limit: "10mb" }));
+// // // // // //   app.use(express.urlencoded({ extended: true }));
+
+// // // // // //   // LOGIN
+// // // // // //   app.post("/api/admin/login", (req, res) => {
+// // // // // //     const { username, password } = req.body;
+
+// // // // // //     const adminUser = process.env.ADMIN_USERNAME || "admin";
+// // // // // //     const adminPass = process.env.ADMIN_PASSWORD || "password123";
+
+// // // // // //     if (username === adminUser && password === adminPass) {
+// // // // // //       const token = jwt.sign({ username }, process.env.JWT_SECRET || "secret", { expiresIn: "24h" });
+// // // // // //       return res.json({ token });
+// // // // // //     }
+
+// // // // // //     res.status(401).json({ message: "Invalid credentials" });
+// // // // // //   });
 
 // // // // // //   const authenticateToken = (req: any, res: any, next: any) => {
 // // // // // //     const authHeader = req.headers["authorization"];
@@ -282,28 +528,21 @@
 // // // // // //     });
 // // // // // //   };
 
-// // // // // //   // ================= PRODUCTS =================
-
-// // // // // //   app.get("/api/products", (req, res) => {
+// // // // // //   // GET ALL PRODUCTS
+// // // // // //   app.get("/api/products", (_, res) => {
 // // // // // //     const products = db.prepare("SELECT * FROM products ORDER BY created_at DESC").all();
-// // // // // //     res.json(
-// // // // // //       products.map((p: any) => ({
-// // // // // //         ...p,
-// // // // // //         images: JSON.parse(p.images || "[]"),
-// // // // // //         specifications: JSON.parse(p.specifications || "{}"),
-// // // // // //         featured: Boolean(p.featured)
-// // // // // //       }))
-// // // // // //     );
+// // // // // //     res.json(products.map((p: any) => ({
+// // // // // //       ...p,
+// // // // // //       images: JSON.parse(p.images || "[]"),
+// // // // // //       specifications: JSON.parse(p.specifications || "{}"),
+// // // // // //       featured: Boolean(p.featured)
+// // // // // //     })));
 // // // // // //   });
 
+// // // // // //   // GET PRODUCT BY ID
 // // // // // //   app.get("/api/products/:id", (req, res) => {
-// // // // // //     const product = db
-// // // // // //       .prepare("SELECT * FROM products WHERE id = ?")
-// // // // // //       .get(req.params.id) as any;
-
-// // // // // //     if (!product) {
-// // // // // //       return res.status(404).json({ message: "Product not found" });
-// // // // // //     }
+// // // // // //     const product = db.prepare("SELECT * FROM products WHERE id = ?").get(req.params.id) as any;
+// // // // // //     if (!product) return res.status(404).json({ message: "Product not found" });
 
 // // // // // //     res.json({
 // // // // // //       ...product,
@@ -313,120 +552,120 @@
 // // // // // //     });
 // // // // // //   });
 
-
+// // // // // //   // CREATE PRODUCT
 // // // // // //   app.post("/api/products", authenticateToken, upload.array("images"), (req, res) => {
-// // // // // //     const {
-// // // // // //       name,
-// // // // // //       price_inr,
-// // // // // //       price_usd,
-// // // // // //       price_eur,
-// // // // // //       grade,
-// // // // // //       willow_type,
-// // // // // //       weight,
-// // // // // //       style,
-// // // // // //       description,
-// // // // // //       featured
-// // // // // //     } = req.body;
+// // // // // //     try {
+// // // // // //       const {
+// // // // // //         name,
+// // // // // //         price_inr,
+// // // // // //         price_usd,
+// // // // // //         price_eur,
+// // // // // //         grade,
+// // // // // //         willow_type,
+// // // // // //         weight,
+// // // // // //         style,
+// // // // // //         description,
+// // // // // //         specifications,
+// // // // // //         featured
+// // // // // //       } = req.body;
 
-// // // // // //     const imagePaths = (req.files as Express.Multer.File[] || []).map(
-// // // // // //       file => `/uploads/${file.filename}`
-// // // // // //     );
+// // // // // //       const imagePaths = (req.files as Express.Multer.File[] || []).map(
+// // // // // //         file => `/uploads/${file.filename}`
+// // // // // //       );
 
-// // // // // //     const result = db.prepare(`
-// // // // // //       INSERT INTO products (
-// // // // // //         name, price_inr, price_usd, price_eur,
-// // // // // //         grade, willow_type, weight, style,
-// // // // // //         description, images, specifications, featured
-// // // // // //       )
-// // // // // //       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-// // // // // //     `).run(
-// // // // // //       name,
-// // // // // //       price_inr,
-// // // // // //       price_usd,
-// // // // // //       price_eur,
-// // // // // //       grade,
-// // // // // //       willow_type,
-// // // // // //       weight,
-// // // // // //       style,
-// // // // // //       description,
-// // // // // //       JSON.stringify(imagePaths),
-// // // // // //       JSON.stringify({}),
-// // // // // //       featured === "1" ? 1 : 0
-// // // // // //     );
+// // // // // //       const specs =
+// // // // // //         typeof specifications === "string"
+// // // // // //           ? JSON.parse(specifications)
+// // // // // //           : specifications || {};
 
-// // // // // //     res.json({ id: result.lastInsertRowid });
+// // // // // //       const result = db.prepare(`
+// // // // // //         INSERT INTO products (
+// // // // // //           name, price_inr, price_usd, price_eur,
+// // // // // //           grade, willow_type, weight, style,
+// // // // // //           description, images, specifications, featured
+// // // // // //         )
+// // // // // //         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+// // // // // //       `).run(
+// // // // // //         name,
+// // // // // //         Number(price_inr),
+// // // // // //         Number(price_usd),
+// // // // // //         Number(price_eur),
+// // // // // //         grade,
+// // // // // //         willow_type,
+// // // // // //         weight,
+// // // // // //         style,
+// // // // // //         description,
+// // // // // //         JSON.stringify(imagePaths),
+// // // // // //         JSON.stringify(specs),
+// // // // // //         featured === "1" ? 1 : 0
+// // // // // //       );
+
+// // // // // //       res.json({ id: result.lastInsertRowid });
+// // // // // //     } catch (err) {
+// // // // // //       console.error(err);
+// // // // // //       res.status(500).json({ error: "Server error" });
+// // // // // //     }
 // // // // // //   });
 
+// // // // // //   // UPDATE PRODUCT
 // // // // // //   app.put("/api/products/:id", authenticateToken, upload.array("images"), (req, res) => {
-// // // // // //     const {
-// // // // // //       name,
-// // // // // //       price_inr,
-// // // // // //       price_usd,
-// // // // // //       price_eur,
-// // // // // //       grade,
-// // // // // //       willow_type,
-// // // // // //       weight,
-// // // // // //       style,
-// // // // // //       description,
-// // // // // //       featured
-// // // // // //     } = req.body;
+// // // // // //     try {
+// // // // // //       const {
+// // // // // //         name,
+// // // // // //         price_inr,
+// // // // // //         price_usd,
+// // // // // //         price_eur,
+// // // // // //         grade,
+// // // // // //         willow_type,
+// // // // // //         weight,
+// // // // // //         style,
+// // // // // //         description,
+// // // // // //         specifications,
+// // // // // //         featured
+// // // // // //       } = req.body;
 
-// // // // // //     const imagePaths = (req.files as Express.Multer.File[] || []).map(
-// // // // // //       file => `/uploads/${file.filename}`
-// // // // // //     );
+// // // // // //       const imagePaths = (req.files as Express.Multer.File[] || []).map(
+// // // // // //         file => `/uploads/${file.filename}`
+// // // // // //       );
 
-// // // // // //     db.prepare(`
-// // // // // //       UPDATE products SET
-// // // // // //         name = ?, price_inr = ?, price_usd = ?, price_eur = ?,
-// // // // // //         grade = ?, willow_type = ?, weight = ?, style = ?,
-// // // // // //         description = ?, images = ?, featured = ?
-// // // // // //       WHERE id = ?
-// // // // // //     `).run(
-// // // // // //       name,
-// // // // // //       price_inr,
-// // // // // //       price_usd,
-// // // // // //       price_eur,
-// // // // // //       grade,
-// // // // // //       willow_type,
-// // // // // //       weight,
-// // // // // //       style,
-// // // // // //       description,
-// // // // // //       JSON.stringify(imagePaths),
-// // // // // //       featured === "1" ? 1 : 0,
-// // // // // //       req.params.id
-// // // // // //     );
+// // // // // //       const specs =
+// // // // // //         typeof specifications === "string"
+// // // // // //           ? JSON.parse(specifications)
+// // // // // //           : specifications || {};
 
-// // // // // //     res.json({ message: "Updated successfully" });
+// // // // // //       db.prepare(`
+// // // // // //         UPDATE products SET
+// // // // // //           name = ?, price_inr = ?, price_usd = ?, price_eur = ?,
+// // // // // //           grade = ?, willow_type = ?, weight = ?, style = ?,
+// // // // // //           description = ?, images = ?, specifications = ?, featured = ?
+// // // // // //         WHERE id = ?
+// // // // // //       `).run(
+// // // // // //         name,
+// // // // // //         Number(price_inr),
+// // // // // //         Number(price_usd),
+// // // // // //         Number(price_eur),
+// // // // // //         grade,
+// // // // // //         willow_type,
+// // // // // //         weight,
+// // // // // //         style,
+// // // // // //         description,
+// // // // // //         JSON.stringify(imagePaths),
+// // // // // //         JSON.stringify(specs),
+// // // // // //         featured === "1" ? 1 : 0,
+// // // // // //         req.params.id
+// // // // // //       );
+
+// // // // // //       res.json({ message: "Updated successfully" });
+// // // // // //     } catch (err) {
+// // // // // //       console.error(err);
+// // // // // //       res.status(500).json({ error: "Server error" });
+// // // // // //     }
 // // // // // //   });
 
 // // // // // //   app.delete("/api/products/:id", authenticateToken, (req, res) => {
 // // // // // //     db.prepare("DELETE FROM products WHERE id = ?").run(req.params.id);
 // // // // // //     res.json({ message: "Deleted successfully" });
 // // // // // //   });
-
-// // // // // //   // ================= ADMIN LOGIN =================
-
-// // // // // // app.post("/api/admin/login", (req, res) => {
-// // // // // //   const { username, password } = req.body;
-
-// // // // // //   const adminUser = process.env.ADMIN_USERNAME || "admin";
-// // // // // //   const adminPass = process.env.ADMIN_PASSWORD || "password123";
-
-// // // // // //   if (username === adminUser && password === adminPass) {
-// // // // // //     const token = jwt.sign(
-// // // // // //       { username },
-// // // // // //       process.env.JWT_SECRET || "secret",
-// // // // // //       { expiresIn: "24h" }
-// // // // // //     );
-
-// // // // // //     return res.json({ token });
-// // // // // //   }
-
-// // // // // //   res.status(401).json({ message: "Invalid credentials" });
-// // // // // //   });
-
-
-// // // // // //   // ================= VITE =================
 
 // // // // // //   if (process.env.NODE_ENV !== "production") {
 // // // // // //     const vite = await createViteServer({
@@ -440,8 +679,11 @@
 // // // // // //     console.log(`Server running on http://localhost:${PORT}`);
 // // // // // //   });
 // // // // // // }
+
 // // // // // // startServer();
 
+
+// // // // // // --------------------------------------------------------------------------------------
 
 // // // // // import express from "express";
 // // // // // import { createServer as createViteServer } from "vite";
@@ -452,229 +694,548 @@
 // // // // // import dotenv from "dotenv";
 // // // // // import multer from "multer";
 // // // // // import fs from "fs";
+// // // // // import pkg from "pg";
+// // // // // import { Request, Response } from "express";
+
 
 // // // // // dotenv.config();
 
 // // // // // const __filename = fileURLToPath(import.meta.url);
 // // // // // const __dirname = path.dirname(__filename);
 
-// // // // // const db = new Database("cricface.db");
 
-// // // // // const uploadDir = path.join(__dirname, "uploads");
-// // // // // if (!fs.existsSync(uploadDir)) {
-// // // // //   fs.mkdirSync(uploadDir);
+// // // // // const { Pool } = pkg;
+
+// // // // // const isProduction = process.env.NODE_ENV === "production";
+
+// // // // // let db: any;
+// // // // // let pool: any;
+
+// // // // // if (isProduction) {
+// // // // //   pool = new Pool({
+// // // // //     connectionString: process.env.DATABASE_URL,
+// // // // //     ssl: { rejectUnauthorized: false },
+// // // // //   });
+// // // // // } else {
+// // // // //   db = new Database("cricface.db");
 // // // // // }
 
+// // // // // // const db = new Database("cricface.db");
+
+// // // // // // Ensure upload folders exist
+// // // // // if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
+// // // // // if (!fs.existsSync("uploads/images")) fs.mkdirSync("uploads/images", { recursive: true });
+// // // // // if (!fs.existsSync("uploads/videos")) fs.mkdirSync("uploads/videos", { recursive: true });
+
+// // // // // // Safe alter columns
+// // // // // try { db.exec(`ALTER TABLE products ADD COLUMN original_price_inr REAL`); } catch {}
+// // // // // try { db.exec(`ALTER TABLE products ADD COLUMN original_price_usd REAL`); } catch {}
+// // // // // try { db.exec(`ALTER TABLE products ADD COLUMN original_price_eur REAL`); } catch {}
+// // // // // try { db.exec(`ALTER TABLE products ADD COLUMN featured INTEGER DEFAULT 0`); } catch {}
+// // // // // try { db.exec(`ALTER TABLE products ADD COLUMN video TEXT`); } catch {}
+
+// // // // // // const storage = multer.diskStorage({
+// // // // // //   destination: (req, file, cb) => {
+// // // // // //     if (file.mimetype.startsWith("video"))
+// // // // // //       cb(null, "uploads/videos/");
+// // // // // //     else
+// // // // // //       cb(null, "uploads/images/");
+// // // // // //   },
+// // // // // //   filename: (req, file, cb) => {
+// // // // // //     cb(null, Date.now() + "-" + file.originalname);
+// // // // // //   }
+// // // // // // });
+
 // // // // // const storage = multer.diskStorage({
-// // // // //   destination: (_, __, cb) => cb(null, uploadDir),
-// // // // //   filename: (_, file, cb) => {
-// // // // //     const unique = Date.now() + "-" + file.originalname.replace(/\s+/g, "");
-// // // // //     cb(null, unique);
+// // // // //   destination: (req: any, file: any, cb: any) => {
+// // // // //     if (file.mimetype.startsWith("video")) {
+// // // // //       cb(null, "uploads/videos/");
+// // // // //     } else {
+// // // // //       cb(null, "uploads/images/");
+// // // // //     }
+// // // // //   },
+// // // // //   filename: (req: any, file: any, cb: any) => {
+// // // // //     cb(null, Date.now() + "-" + file.originalname);
 // // // // //   }
 // // // // // });
 
-// // // // // const upload = multer({ storage });
 
-// // // // // db.exec(`
-// // // // //   CREATE TABLE IF NOT EXISTS products (
-// // // // //     id INTEGER PRIMARY KEY AUTOINCREMENT,
-// // // // //     name TEXT NOT NULL,
-// // // // //     price_inr REAL NOT NULL,
-// // // // //     price_usd REAL NOT NULL,
-// // // // //     price_eur REAL NOT NULL,
-// // // // //     grade TEXT,
-// // // // //     willow_type TEXT,
-// // // // //     weight TEXT,
-// // // // //     style TEXT,
-// // // // //     description TEXT,
-// // // // //     images TEXT,
-// // // // //     specifications TEXT,
-// // // // //     featured INTEGER DEFAULT 0,
-// // // // //     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-// // // // //   );
-// // // // // `);
+// // // // // const upload = multer({
+// // // // //   storage,
+// // // // //   limits: { fileSize: 200 * 1024 * 1024 } // 60MB max
+// // // // // });
 
 // // // // // async function startServer() {
 // // // // //   const app = express();
 // // // // //   const PORT = 3000;
 
-// // // // //   app.use("/uploads", express.static(uploadDir));
-// // // // //   app.use(express.json({ limit: "10mb" }));
-// // // // //   app.use(express.urlencoded({ extended: true }));
+// // // // //   app.use(express.json());
+// // // // //   app.use("/uploads", express.static("uploads"));
 
-// // // // //   // LOGIN
-// // // // //   app.post("/api/admin/login", (req, res) => {
-// // // // //     const { username, password } = req.body;
+// // // // //   app.use("/", express.static(path.join(__dirname, "public")));
 
-// // // // //     const adminUser = process.env.ADMIN_USERNAME || "admin";
-// // // // //     const adminPass = process.env.ADMIN_PASSWORD || "password123";
+// // // // //   // ADMIN LOGIN
+// // // // // app.post("/api/admin/login", (req: Request, res: Response) => {
+// // // // //   const { username, password } = req.body;
 
-// // // // //     if (username === adminUser && password === adminPass) {
-// // // // //       const token = jwt.sign({ username }, process.env.JWT_SECRET || "secret", { expiresIn: "24h" });
-// // // // //       return res.json({ token });
-// // // // //     }
+// // // // //   const adminUser = process.env.ADMIN_USERNAME || "admin";
+// // // // //   const adminPass = process.env.ADMIN_PASSWORD || "password123";
 
-// // // // //     res.status(401).json({ message: "Invalid credentials" });
-// // // // //   });
+// // // // //   if (username === adminUser && password === adminPass) {
+// // // // //     const token = jwt.sign(
+// // // // //       { username },
+// // // // //       process.env.JWT_SECRET || "secret",
+// // // // //       { expiresIn: "24h" }
+// // // // //     );
+
+// // // // //     return res.json({ token });
+// // // // //   }
+
+// // // // //   res.status(401).json({ message: "Invalid credentials" });
+// // // // // });
 
 // // // // //   const authenticateToken = (req: any, res: any, next: any) => {
 // // // // //     const authHeader = req.headers["authorization"];
 // // // // //     const token = authHeader && authHeader.split(" ")[1];
 // // // // //     if (!token) return res.sendStatus(401);
-
 // // // // //     jwt.verify(token, process.env.JWT_SECRET || "secret", (err: any) => {
 // // // // //       if (err) return res.sendStatus(403);
 // // // // //       next();
 // // // // //     });
 // // // // //   };
 
-// // // // //   // GET ALL PRODUCTS
-// // // // //   app.get("/api/products", (_, res) => {
-// // // // //     const products = db.prepare("SELECT * FROM products ORDER BY created_at DESC").all();
-// // // // //     res.json(products.map((p: any) => ({
-// // // // //       ...p,
-// // // // //       images: JSON.parse(p.images || "[]"),
-// // // // //       specifications: JSON.parse(p.specifications || "{}"),
-// // // // //       featured: Boolean(p.featured)
-// // // // //     })));
-// // // // //   });
-
-// // // // //   // GET PRODUCT BY ID
-// // // // //   app.get("/api/products/:id", (req, res) => {
-// // // // //     const product = db.prepare("SELECT * FROM products WHERE id = ?").get(req.params.id) as any;
-// // // // //     if (!product) return res.status(404).json({ message: "Product not found" });
-
-// // // // //     res.json({
-// // // // //       ...product,
-// // // // //       images: JSON.parse(product.images || "[]"),
-// // // // //       specifications: JSON.parse(product.specifications || "{}"),
-// // // // //       featured: Boolean(product.featured)
-// // // // //     });
-// // // // //   });
-
-// // // // //   // CREATE PRODUCT
-// // // // //   app.post("/api/products", authenticateToken, upload.array("images"), (req, res) => {
-// // // // //     try {
-// // // // //       const {
-// // // // //         name,
-// // // // //         price_inr,
-// // // // //         price_usd,
-// // // // //         price_eur,
-// // // // //         grade,
-// // // // //         willow_type,
-// // // // //         weight,
-// // // // //         style,
-// // // // //         description,
-// // // // //         specifications,
-// // // // //         featured
-// // // // //       } = req.body;
-
-// // // // //       const imagePaths = (req.files as Express.Multer.File[] || []).map(
-// // // // //         file => `/uploads/${file.filename}`
+// // // // //   // API Routes
+// // // // //   // app.get("/api/products", (req, res) => {
+// // // // //   //   const products = db.prepare("SELECT * FROM products ORDER BY created_at DESC").all();
+// // // // //   //   res.json(products.map((p: any) => ({
+// // // // //   //     ...p,
+// // // // //   //     images: p.images ? JSON.parse(p.images) : [],
+// // // // //   //     specifications: p.specifications ? JSON.parse(p.specifications) : {}
+// // // // //   //   })));
+// // // // //   // });
+// // // // //   app.get("/api/products", async (req: Request, res: Response) => {
+// // // // //   // app.get("/api/products", async (req, res) => {
+// // // // //   try {
+// // // // //     if (isProduction) {
+// // // // //       const result = await pool.query(
+// // // // //         "SELECT * FROM products ORDER BY created_at DESC"
 // // // // //       );
 
-// // // // //       const specs =
-// // // // //         typeof specifications === "string"
-// // // // //           ? JSON.parse(specifications)
-// // // // //           : specifications || {};
+// // // // //       const products = result.rows.map((p: any) => ({
+// // // // //         ...p,
+// // // // //         images: p.images ? JSON.parse(p.images) : [],
+// // // // //         specifications: p.specifications
+// // // // //           ? JSON.parse(p.specifications)
+// // // // //           : {},
+// // // // //       }));
 
-// // // // //       const result = db.prepare(`
-// // // // //         INSERT INTO products (
-// // // // //           name, price_inr, price_usd, price_eur,
-// // // // //           grade, willow_type, weight, style,
-// // // // //           description, images, specifications, featured
-// // // // //         )
-// // // // //         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-// // // // //       `).run(
-// // // // //         name,
-// // // // //         Number(price_inr),
-// // // // //         Number(price_usd),
-// // // // //         Number(price_eur),
-// // // // //         grade,
-// // // // //         willow_type,
-// // // // //         weight,
-// // // // //         style,
-// // // // //         description,
-// // // // //         JSON.stringify(imagePaths),
-// // // // //         JSON.stringify(specs),
-// // // // //         featured === "1" ? 1 : 0
+// // // // //       return res.json(products);
+// // // // //     } else {
+// // // // //       const products = db
+// // // // //         .prepare("SELECT * FROM products ORDER BY created_at DESC")
+// // // // //         .all();
+
+// // // // //       return res.json(
+// // // // //         products.map((p: any) => ({
+// // // // //           ...p,
+// // // // //           images: p.images ? JSON.parse(p.images) : [],
+// // // // //           specifications: p.specifications
+// // // // //             ? JSON.parse(p.specifications)
+// // // // //             : {},
+// // // // //         }))
 // // // // //       );
-
-// // // // //       res.json({ id: result.lastInsertRowid });
-// // // // //     } catch (err) {
-// // // // //       console.error(err);
-// // // // //       res.status(500).json({ error: "Server error" });
 // // // // //     }
-// // // // //   });
+// // // // //   } catch (error) {
+// // // // //     console.error(error);
+// // // // //     res.status(500).json({ message: "Server error" });
+// // // // //   }
+// // // // // });
 
-// // // // //   // UPDATE PRODUCT
-// // // // //   app.put("/api/products/:id", authenticateToken, upload.array("images"), (req, res) => {
+// // // // //   // app.get("/api/products/:id", (req, res) => {
+// // // // //   //   const product = db.prepare("SELECT * FROM products WHERE id = ?").get(req.params.id);
+// // // // //   //   if (!product) return res.status(404).json({ message: "Not found" });
+
+// // // // //   //   res.json({
+// // // // //   //     ...product,
+// // // // //   //     images: product.images ? JSON.parse(product.images) : [],
+// // // // //   //     specifications: product.specifications ? JSON.parse(product.specifications) : {}
+// // // // //   //   });
+// // // // //   // });
+
+// // // // //   app.get("/api/products/:id", async (req: Request, res: Response) => {
+// // // // //   try {
+// // // // //     if (isProduction) {
+// // // // //       const result = await pool.query(
+// // // // //         "SELECT * FROM products WHERE id = $1",
+// // // // //         [req.params.id]
+// // // // //       );
+
+// // // // //       if (result.rows.length === 0)
+// // // // //         return res.status(404).json({ message: "Not found" });
+
+// // // // //       const product = result.rows[0];
+
+// // // // //       return res.json({
+// // // // //         ...product,
+// // // // //         images: product.images ? JSON.parse(product.images) : [],
+// // // // //         specifications: product.specifications
+// // // // //           ? JSON.parse(product.specifications)
+// // // // //           : {},
+// // // // //       });
+// // // // //     } else {
+// // // // //       const product = db
+// // // // //         .prepare("SELECT * FROM products WHERE id = ?")
+// // // // //         .get(req.params.id);
+
+// // // // //       if (!product)
+// // // // //         return res.status(404).json({ message: "Not found" });
+
+// // // // //       return res.json({
+// // // // //         ...product,
+// // // // //         images: product.images ? JSON.parse(product.images) : [],
+// // // // //         specifications: product.specifications
+// // // // //           ? JSON.parse(product.specifications)
+// // // // //           : {},
+// // // // //       });
+// // // // //     }
+// // // // //   } catch (error) {
+// // // // //     console.error(error);
+// // // // //     res.status(500).json({ message: "Server error" });
+// // // // //   }
+// // // // // });
+
+// // // // // //   app.put(
+// // // // // //   "/api/products/:id",
+// // // // // //   authenticateToken,
+// // // // // //   upload.fields([{ name: "images" }, { name: "video", maxCount: 1 }]),
+// // // // // //   (req: any, res) => {
+
+// // // // // //     const id = req.params.id;
+
+// // // // // //     const product = db.prepare("SELECT * FROM products WHERE id = ?").get(id);
+// // // // // //     if (!product) return res.status(404).json({ message: "Product not found" });
+
+// // // // // //     const imageFiles = req.files?.images || [];
+// // // // // //     const videoFile = req.files?.video?.[0];
+
+// // // // // //     const imagePaths =
+// // // // // //       imageFiles.length > 0
+// // // // // //         ? imageFiles.map((file: any) => `/uploads/images/${file.filename}`)
+// // // // // //         : JSON.parse(product.images || "[]");
+
+// // // // // //     const videoPath =
+// // // // // //       videoFile
+// // // // // //         ? `/uploads/videos/${videoFile.filename}`
+// // // // // //         : product.video;
+
+// // // // // //     db.prepare(`
+// // // // // //       UPDATE products SET
+// // // // // //       name = ?, original_price_inr = ?, price_inr = ?,
+// // // // // //       original_price_usd = ?, price_usd = ?,
+// // // // // //       original_price_eur = ?, price_eur = ?,
+// // // // // //       grade = ?, willow_type = ?, weight = ?, style = ?,
+// // // // // //       description = ?, images = ?, specifications = ?,
+// // // // // //       featured = ?, video = ?
+// // // // // //       WHERE id = ?
+// // // // // //     `).run(
+// // // // // //       req.body.name,
+// // // // // //       req.body.original_price_inr || null,
+// // // // // //       req.body.price_inr,
+// // // // // //       req.body.original_price_usd || null,
+// // // // // //       req.body.price_usd,
+// // // // // //       req.body.original_price_eur || null,
+// // // // // //       req.body.price_eur,
+// // // // // //       req.body.grade,
+// // // // // //       req.body.willow_type,
+// // // // // //       req.body.weight,
+// // // // // //       req.body.style,
+// // // // // //       req.body.description,
+// // // // // //       JSON.stringify(imagePaths),
+// // // // // //       req.body.specifications,
+// // // // // //       req.body.featured === "1" ? 1 : 0,
+// // // // // //       videoPath,
+// // // // // //       id
+// // // // // //     );
+
+// // // // // //     res.json({ message: "Updated successfully" });
+// // // // // //   }
+// // // // // // );
+
+// // // // // //   app.delete("/api/products/:id", authenticateToken, (req, res) => {
+// // // // // //   db.prepare("DELETE FROM products WHERE id = ?").run(req.params.id);
+// // // // // //   res.json({ message: "Deleted successfully" });
+// // // // // // });
+
+
+// // // // //   app.put(
+// // // // //   "/api/products/:id",
+// // // // //   authenticateToken,
+// // // // //   upload.fields([{ name: "images" }, { name: "video", maxCount: 1 }]),
+// // // // //   async (req: any, res) => {
 // // // // //     try {
-// // // // //       const {
-// // // // //         name,
-// // // // //         price_inr,
-// // // // //         price_usd,
-// // // // //         price_eur,
-// // // // //         grade,
-// // // // //         willow_type,
-// // // // //         weight,
-// // // // //         style,
-// // // // //         description,
-// // // // //         specifications,
-// // // // //         featured
-// // // // //       } = req.body;
+// // // // //       const id = req.params.id;
 
-// // // // //       const imagePaths = (req.files as Express.Multer.File[] || []).map(
-// // // // //         file => `/uploads/${file.filename}`
-// // // // //       );
+// // // // //       let existingProduct;
 
-// // // // //       const specs =
-// // // // //         typeof specifications === "string"
-// // // // //           ? JSON.parse(specifications)
-// // // // //           : specifications || {};
+// // // // //       if (isProduction) {
+// // // // //         const result = await pool.query(
+// // // // //           "SELECT * FROM products WHERE id = $1",
+// // // // //           [id]
+// // // // //         );
+// // // // //         if (result.rows.length === 0)
+// // // // //           return res.status(404).json({ message: "Product not found" });
 
-// // // // //       db.prepare(`
-// // // // //         UPDATE products SET
-// // // // //           name = ?, price_inr = ?, price_usd = ?, price_eur = ?,
-// // // // //           grade = ?, willow_type = ?, weight = ?, style = ?,
-// // // // //           description = ?, images = ?, specifications = ?, featured = ?
-// // // // //         WHERE id = ?
-// // // // //       `).run(
-// // // // //         name,
-// // // // //         Number(price_inr),
-// // // // //         Number(price_usd),
-// // // // //         Number(price_eur),
-// // // // //         grade,
-// // // // //         willow_type,
-// // // // //         weight,
-// // // // //         style,
-// // // // //         description,
+// // // // //         existingProduct = result.rows[0];
+// // // // //       } else {
+// // // // //         existingProduct = db
+// // // // //           .prepare("SELECT * FROM products WHERE id = ?")
+// // // // //           .get(id);
+
+// // // // //         if (!existingProduct)
+// // // // //           return res.status(404).json({ message: "Product not found" });
+// // // // //       }
+
+// // // // //       const imageFiles = req.files?.images || [];
+// // // // //       const videoFile = req.files?.video?.[0];
+
+// // // // //       const imagePaths =
+// // // // //         imageFiles.length > 0
+// // // // //           ? imageFiles.map((file: any) => `/uploads/images/${file.filename}`)
+// // // // //           : JSON.parse(existingProduct.images || "[]");
+
+// // // // //       const videoPath =
+// // // // //         videoFile
+// // // // //           ? `/uploads/videos/${videoFile.filename}`
+// // // // //           : existingProduct.video;
+
+// // // // //       const values = [
+// // // // //         req.body.name,
+// // // // //         req.body.original_price_inr || null,
+// // // // //         req.body.price_inr,
+// // // // //         req.body.original_price_usd || null,
+// // // // //         req.body.price_usd,
+// // // // //         req.body.original_price_eur || null,
+// // // // //         req.body.price_eur,
+// // // // //         req.body.grade,
+// // // // //         req.body.willow_type,
+// // // // //         req.body.weight,
+// // // // //         req.body.style,
+// // // // //         req.body.description,
 // // // // //         JSON.stringify(imagePaths),
-// // // // //         JSON.stringify(specs),
-// // // // //         featured === "1" ? 1 : 0,
-// // // // //         req.params.id
-// // // // //       );
+// // // // //         req.body.specifications,
+// // // // //         req.body.featured === "1" ? 1 : 0,
+// // // // //         videoPath,
+// // // // //         id,
+// // // // //       ];
+
+// // // // //       if (isProduction) {
+// // // // //         await pool.query(
+// // // // //           `UPDATE products SET
+// // // // //             name = $1,
+// // // // //             original_price_inr = $2,
+// // // // //             price_inr = $3,
+// // // // //             original_price_usd = $4,
+// // // // //             price_usd = $5,
+// // // // //             original_price_eur = $6,
+// // // // //             price_eur = $7,
+// // // // //             grade = $8,
+// // // // //             willow_type = $9,
+// // // // //             weight = $10,
+// // // // //             style = $11,
+// // // // //             description = $12,
+// // // // //             images = $13,
+// // // // //             specifications = $14,
+// // // // //             featured = $15,
+// // // // //             video = $16
+// // // // //            WHERE id = $17`,
+// // // // //           values
+// // // // //         );
+// // // // //       } else {
+// // // // //         db.prepare(`
+// // // // //           UPDATE products SET
+// // // // //             name = ?,
+// // // // //             original_price_inr = ?,
+// // // // //             price_inr = ?,
+// // // // //             original_price_usd = ?,
+// // // // //             price_usd = ?,
+// // // // //             original_price_eur = ?,
+// // // // //             price_eur = ?,
+// // // // //             grade = ?,
+// // // // //             willow_type = ?,
+// // // // //             weight = ?,
+// // // // //             style = ?,
+// // // // //             description = ?,
+// // // // //             images = ?,
+// // // // //             specifications = ?,
+// // // // //             featured = ?,
+// // // // //             video = ?
+// // // // //            WHERE id = ?
+// // // // //         `).run(...values);
+// // // // //       }
 
 // // // // //       res.json({ message: "Updated successfully" });
-// // // // //     } catch (err) {
-// // // // //       console.error(err);
-// // // // //       res.status(500).json({ error: "Server error" });
+// // // // //     } catch (error) {
+// // // // //       console.error(error);
+// // // // //       res.status(500).json({ message: "Update failed" });
 // // // // //     }
-// // // // //   });
+// // // // //   }
+// // // // // );
 
-// // // // //   app.delete("/api/products/:id", authenticateToken, (req, res) => {
-// // // // //     db.prepare("DELETE FROM products WHERE id = ?").run(req.params.id);
+// // // // //   app.delete("/api/products/:id", authenticateToken, async (req: Request, res: Response) => {
+// // // // //   try {
+// // // // //     if (isProduction) {
+// // // // //       await pool.query("DELETE FROM products WHERE id = $1", [
+// // // // //         req.params.id,
+// // // // //       ]);
+// // // // //     } else {
+// // // // //       db.prepare("DELETE FROM products WHERE id = ?").run(
+// // // // //         req.params.id
+// // // // //       );
+// // // // //     }
+
 // // // // //     res.json({ message: "Deleted successfully" });
-// // // // //   });
+// // // // //   } catch (error) {
+// // // // //     console.error(error);
+// // // // //     res.status(500).json({ message: "Server error" });
+// // // // //   }
+// // // // // });
 
+// // // // //   // app.post(
+// // // // //   //   "/api/products",
+// // // // //   //   authenticateToken,
+// // // // //   //   upload.fields([{ name: "images" }, { name: "video", maxCount: 1 }]),
+// // // // //   //   (req: any, res) => {
+
+// // // // //   //     const imageFiles = req.files?.images || [];
+// // // // //   //     const videoFile = req.files?.video?.[0];
+
+// // // // //   //     const imagePaths = imageFiles.map(
+// // // // //   //       (file: any) => `/uploads/images/${file.filename}`
+// // // // //   //     );
+
+// // // // //   //     const videoPath = videoFile
+// // // // //   //       ? `/uploads/videos/${videoFile.filename}`
+// // // // //   //       : null;
+
+// // // // //   //     const result = db.prepare(`
+// // // // //   //       INSERT INTO products
+// // // // //   //       (name, original_price_inr, price_inr,
+// // // // //   //        original_price_usd, price_usd,
+// // // // //   //        original_price_eur, price_eur,
+// // // // //   //        grade, willow_type, weight, style,
+// // // // //   //        description, images, specifications,
+// // // // //   //        featured, video)
+// // // // //   //       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+// // // // //   //     `).run(
+// // // // //   //       req.body.name,
+// // // // //   //       req.body.original_price_inr || null,
+// // // // //   //       req.body.price_inr,
+// // // // //   //       req.body.original_price_usd || null,
+// // // // //   //       req.body.price_usd,
+// // // // //   //       req.body.original_price_eur || null,
+// // // // //   //       req.body.price_eur,
+// // // // //   //       req.body.grade,
+// // // // //   //       req.body.willow_type,
+// // // // //   //       req.body.weight,
+// // // // //   //       req.body.style,
+// // // // //   //       req.body.description,
+// // // // //   //       JSON.stringify(imagePaths),
+// // // // //   //       req.body.specifications,
+// // // // //   //       req.body.featured === "1" ? 1 : 0,
+// // // // //   //       videoPath
+// // // // //   //     );
+
+// // // // //   //     res.json({ id: result.lastInsertRowid });
+// // // // //   //   }
+// // // // //   // );
+
+// // // // //   app.post(
+// // // // //   "/api/products",
+// // // // //   authenticateToken,
+// // // // //   upload.fields([{ name: "images" }, { name: "video", maxCount: 1 }]),
+// // // // //   async (req: any, res) => {
+// // // // //     try {
+// // // // //       const imageFiles = req.files?.images || [];
+// // // // //       const videoFile = req.files?.video?.[0];
+
+// // // // //       const imagePaths = imageFiles.map(
+// // // // //         (file: any) => `/uploads/images/${file.filename}`
+// // // // //       );
+
+// // // // //       const videoPath = videoFile
+// // // // //         ? `/uploads/videos/${videoFile.filename}`
+// // // // //         : null;
+
+// // // // //       const values = [
+// // // // //         req.body.name,
+// // // // //         req.body.original_price_inr || null,
+// // // // //         req.body.price_inr,
+// // // // //         req.body.original_price_usd || null,
+// // // // //         req.body.price_usd,
+// // // // //         req.body.original_price_eur || null,
+// // // // //         req.body.price_eur,
+// // // // //         req.body.grade,
+// // // // //         req.body.willow_type,
+// // // // //         req.body.weight,
+// // // // //         req.body.style,
+// // // // //         req.body.description,
+// // // // //         JSON.stringify(imagePaths),
+// // // // //         req.body.specifications,
+// // // // //         req.body.featured === "1" ? 1 : 0,
+// // // // //         videoPath,
+// // // // //       ];
+
+// // // // //       if (isProduction) {
+// // // // //         const result = await pool.query(
+// // // // //           `INSERT INTO products
+// // // // //           (name, original_price_inr, price_inr,
+// // // // //            original_price_usd, price_usd,
+// // // // //            original_price_eur, price_eur,
+// // // // //            grade, willow_type, weight, style,
+// // // // //            description, images, specifications,
+// // // // //            featured, video)
+// // // // //            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+// // // // //            RETURNING id`,
+// // // // //           values
+// // // // //         );
+
+// // // // //         return res.json({ id: result.rows[0].id });
+// // // // //       } else {
+// // // // //         const result = db.prepare(`
+// // // // //           INSERT INTO products
+// // // // //           (name, original_price_inr, price_inr,
+// // // // //            original_price_usd, price_usd,
+// // // // //            original_price_eur, price_eur,
+// // // // //            grade, willow_type, weight, style,
+// // // // //            description, images, specifications,
+// // // // //            featured, video)
+// // // // //            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+// // // // //         `).run(...values);
+
+// // // // //         return res.json({ id: result.lastInsertRowid });
+// // // // //       }
+// // // // //     } catch (error) {
+// // // // //       console.error(error);
+// // // // //       res.status(500).json({ message: "Insert failed" });
+// // // // //     }
+// // // // //   }
+// // // // // );
+
+// // // // //       // 👇 THIS PART WAS MISSING
 // // // // //   if (process.env.NODE_ENV !== "production") {
 // // // // //     const vite = await createViteServer({
 // // // // //       server: { middlewareMode: true },
-// // // // //       appType: "spa"
+// // // // //       appType: "spa",
 // // // // //     });
 // // // // //     app.use(vite.middlewares);
-// // // // //   }
-
+// // // // //   } else {
+// // // // //   // __dirname points to "dist" when compiled, so go up one level
+// // // // //   const clientDistPath = path.join(__dirname, "../dist");
+// // // // //   app.use(express.static(clientDistPath));
+// // // // //   app.get("*", (req, res) => {
+// // // // //     res.sendFile(path.join(clientDistPath, "index.html"));
+// // // // //   });
+// // // // // }
 // // // // //   app.listen(PORT, () => {
 // // // // //     console.log(`Server running on http://localhost:${PORT}`);
 // // // // //   });
@@ -682,10 +1243,7 @@
 
 // // // // // startServer();
 
-
-// // // // // --------------------------------------------------------------------------------------
-
-// // // // import express from "express";
+// // // // import express, { Request, Response, NextFunction } from "express";
 // // // // import { createServer as createViteServer } from "vite";
 // // // // import Database from "better-sqlite3";
 // // // // import jwt from "jsonwebtoken";
@@ -695,14 +1253,11 @@
 // // // // import multer from "multer";
 // // // // import fs from "fs";
 // // // // import pkg from "pg";
-// // // // import { Request, Response } from "express";
-
 
 // // // // dotenv.config();
 
 // // // // const __filename = fileURLToPath(import.meta.url);
 // // // // const __dirname = path.dirname(__filename);
-
 
 // // // // const { Pool } = pkg;
 
@@ -718,442 +1273,61 @@
 // // // //   });
 // // // // } else {
 // // // //   db = new Database("cricface.db");
-// // // // }
 
-// // // // // const db = new Database("cricface.db");
+// // // //   // Create table locally if not exists
+// // // //   db.exec(`
+// // // //     CREATE TABLE IF NOT EXISTS products (
+// // // //       id INTEGER PRIMARY KEY AUTOINCREMENT,
+// // // //       name TEXT NOT NULL,
+// // // //       original_price_inr REAL,
+// // // //       price_inr REAL NOT NULL,
+// // // //       original_price_usd REAL,
+// // // //       price_usd REAL NOT NULL,
+// // // //       original_price_eur REAL,
+// // // //       price_eur REAL NOT NULL,
+// // // //       grade TEXT,
+// // // //       willow_type TEXT,
+// // // //       weight TEXT,
+// // // //       style TEXT,
+// // // //       description TEXT,
+// // // //       images TEXT,
+// // // //       specifications TEXT,
+// // // //       featured INTEGER DEFAULT 0,
+// // // //       video TEXT,
+// // // //       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+// // // //     )
+// // // //   `);
+// // // // }
 
 // // // // // Ensure upload folders exist
 // // // // if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
 // // // // if (!fs.existsSync("uploads/images")) fs.mkdirSync("uploads/images", { recursive: true });
 // // // // if (!fs.existsSync("uploads/videos")) fs.mkdirSync("uploads/videos", { recursive: true });
 
-// // // // // Safe alter columns
-// // // // try { db.exec(`ALTER TABLE products ADD COLUMN original_price_inr REAL`); } catch {}
-// // // // try { db.exec(`ALTER TABLE products ADD COLUMN original_price_usd REAL`); } catch {}
-// // // // try { db.exec(`ALTER TABLE products ADD COLUMN original_price_eur REAL`); } catch {}
-// // // // try { db.exec(`ALTER TABLE products ADD COLUMN featured INTEGER DEFAULT 0`); } catch {}
-// // // // try { db.exec(`ALTER TABLE products ADD COLUMN video TEXT`); } catch {}
-
-// // // // // const storage = multer.diskStorage({
-// // // // //   destination: (req, file, cb) => {
-// // // // //     if (file.mimetype.startsWith("video"))
-// // // // //       cb(null, "uploads/videos/");
-// // // // //     else
-// // // // //       cb(null, "uploads/images/");
-// // // // //   },
-// // // // //   filename: (req, file, cb) => {
-// // // // //     cb(null, Date.now() + "-" + file.originalname);
-// // // // //   }
-// // // // // });
-
 // // // // const storage = multer.diskStorage({
 // // // //   destination: (req: any, file: any, cb: any) => {
-// // // //     if (file.mimetype.startsWith("video")) {
-// // // //       cb(null, "uploads/videos/");
-// // // //     } else {
-// // // //       cb(null, "uploads/images/");
-// // // //     }
+// // // //     if (file.mimetype.startsWith("video")) cb(null, "uploads/videos/");
+// // // //     else cb(null, "uploads/images/");
 // // // //   },
 // // // //   filename: (req: any, file: any, cb: any) => {
 // // // //     cb(null, Date.now() + "-" + file.originalname);
 // // // //   }
 // // // // });
 
-
 // // // // const upload = multer({
 // // // //   storage,
-// // // //   limits: { fileSize: 200 * 1024 * 1024 } // 60MB max
+// // // //   limits: { fileSize: 200 * 1024 * 1024 }
 // // // // });
 
 // // // // async function startServer() {
 // // // //   const app = express();
-// // // //   const PORT = 3000;
-
-// // // //   app.use(express.json());
-// // // //   app.use("/uploads", express.static("uploads"));
-
-// // // //   app.use("/", express.static(path.join(__dirname, "public")));
-
-// // // //   // ADMIN LOGIN
-// // // // app.post("/api/admin/login", (req: Request, res: Response) => {
-// // // //   const { username, password } = req.body;
-
-// // // //   const adminUser = process.env.ADMIN_USERNAME || "admin";
-// // // //   const adminPass = process.env.ADMIN_PASSWORD || "password123";
-
-// // // //   if (username === adminUser && password === adminPass) {
-// // // //     const token = jwt.sign(
-// // // //       { username },
-// // // //       process.env.JWT_SECRET || "secret",
-// // // //       { expiresIn: "24h" }
-// // // //     );
-
-// // // //     return res.json({ token });
-// // // //   }
-
-// // // //   res.status(401).json({ message: "Invalid credentials" });
-// // // // });
-
-// // // //   const authenticateToken = (req: any, res: any, next: any) => {
-// // // //     const authHeader = req.headers["authorization"];
-// // // //     const token = authHeader && authHeader.split(" ")[1];
-// // // //     if (!token) return res.sendStatus(401);
-// // // //     jwt.verify(token, process.env.JWT_SECRET || "secret", (err: any) => {
-// // // //       if (err) return res.sendStatus(403);
-// // // //       next();
-// // // //     });
-// // // //   };
-
-// // // //   // API Routes
-// // // //   // app.get("/api/products", (req, res) => {
-// // // //   //   const products = db.prepare("SELECT * FROM products ORDER BY created_at DESC").all();
-// // // //   //   res.json(products.map((p: any) => ({
-// // // //   //     ...p,
-// // // //   //     images: p.images ? JSON.parse(p.images) : [],
-// // // //   //     specifications: p.specifications ? JSON.parse(p.specifications) : {}
-// // // //   //   })));
-// // // //   // });
-// // // //   app.get("/api/products", async (req: Request, res: Response) => {
-// // // //   // app.get("/api/products", async (req, res) => {
-// // // //   try {
-// // // //     if (isProduction) {
-// // // //       const result = await pool.query(
-// // // //         "SELECT * FROM products ORDER BY created_at DESC"
-// // // //       );
-
-// // // //       const products = result.rows.map((p: any) => ({
-// // // //         ...p,
-// // // //         images: p.images ? JSON.parse(p.images) : [],
-// // // //         specifications: p.specifications
-// // // //           ? JSON.parse(p.specifications)
-// // // //           : {},
-// // // //       }));
-
-// // // //       return res.json(products);
-// // // //     } else {
-// // // //       const products = db
-// // // //         .prepare("SELECT * FROM products ORDER BY created_at DESC")
-// // // //         .all();
-
-// // // //       return res.json(
-// // // //         products.map((p: any) => ({
-// // // //           ...p,
-// // // //           images: p.images ? JSON.parse(p.images) : [],
-// // // //           specifications: p.specifications
-// // // //             ? JSON.parse(p.specifications)
-// // // //             : {},
-// // // //         }))
-// // // //       );
-// // // //     }
-// // // //   } catch (error) {
-// // // //     console.error(error);
-// // // //     res.status(500).json({ message: "Server error" });
-// // // //   }
-// // // // });
-
-// // // //   // app.get("/api/products/:id", (req, res) => {
-// // // //   //   const product = db.prepare("SELECT * FROM products WHERE id = ?").get(req.params.id);
-// // // //   //   if (!product) return res.status(404).json({ message: "Not found" });
-
-// // // //   //   res.json({
-// // // //   //     ...product,
-// // // //   //     images: product.images ? JSON.parse(product.images) : [],
-// // // //   //     specifications: product.specifications ? JSON.parse(product.specifications) : {}
-// // // //   //   });
-// // // //   // });
-
-// // // //   app.get("/api/products/:id", async (req: Request, res: Response) => {
-// // // //   try {
-// // // //     if (isProduction) {
-// // // //       const result = await pool.query(
-// // // //         "SELECT * FROM products WHERE id = $1",
-// // // //         [req.params.id]
-// // // //       );
-
-// // // //       if (result.rows.length === 0)
-// // // //         return res.status(404).json({ message: "Not found" });
-
-// // // //       const product = result.rows[0];
-
-// // // //       return res.json({
-// // // //         ...product,
-// // // //         images: product.images ? JSON.parse(product.images) : [],
-// // // //         specifications: product.specifications
-// // // //           ? JSON.parse(product.specifications)
-// // // //           : {},
-// // // //       });
-// // // //     } else {
-// // // //       const product = db
-// // // //         .prepare("SELECT * FROM products WHERE id = ?")
-// // // //         .get(req.params.id);
-
-// // // //       if (!product)
-// // // //         return res.status(404).json({ message: "Not found" });
-
-// // // //       return res.json({
-// // // //         ...product,
-// // // //         images: product.images ? JSON.parse(product.images) : [],
-// // // //         specifications: product.specifications
-// // // //           ? JSON.parse(product.specifications)
-// // // //           : {},
-// // // //       });
-// // // //     }
-// // // //   } catch (error) {
-// // // //     console.error(error);
-// // // //     res.status(500).json({ message: "Server error" });
-// // // //   }
-// // // // });
-
-// // // // //   app.put(
-// // // // //   "/api/products/:id",
-// // // // //   authenticateToken,
-// // // // //   upload.fields([{ name: "images" }, { name: "video", maxCount: 1 }]),
-// // // // //   (req: any, res) => {
-
-// // // // //     const id = req.params.id;
-
-// // // // //     const product = db.prepare("SELECT * FROM products WHERE id = ?").get(id);
-// // // // //     if (!product) return res.status(404).json({ message: "Product not found" });
-
-// // // // //     const imageFiles = req.files?.images || [];
-// // // // //     const videoFile = req.files?.video?.[0];
-
-// // // // //     const imagePaths =
-// // // // //       imageFiles.length > 0
-// // // // //         ? imageFiles.map((file: any) => `/uploads/images/${file.filename}`)
-// // // // //         : JSON.parse(product.images || "[]");
-
-// // // // //     const videoPath =
-// // // // //       videoFile
-// // // // //         ? `/uploads/videos/${videoFile.filename}`
-// // // // //         : product.video;
-
-// // // // //     db.prepare(`
-// // // // //       UPDATE products SET
-// // // // //       name = ?, original_price_inr = ?, price_inr = ?,
-// // // // //       original_price_usd = ?, price_usd = ?,
-// // // // //       original_price_eur = ?, price_eur = ?,
-// // // // //       grade = ?, willow_type = ?, weight = ?, style = ?,
-// // // // //       description = ?, images = ?, specifications = ?,
-// // // // //       featured = ?, video = ?
-// // // // //       WHERE id = ?
-// // // // //     `).run(
-// // // // //       req.body.name,
-// // // // //       req.body.original_price_inr || null,
-// // // // //       req.body.price_inr,
-// // // // //       req.body.original_price_usd || null,
-// // // // //       req.body.price_usd,
-// // // // //       req.body.original_price_eur || null,
-// // // // //       req.body.price_eur,
-// // // // //       req.body.grade,
-// // // // //       req.body.willow_type,
-// // // // //       req.body.weight,
-// // // // //       req.body.style,
-// // // // //       req.body.description,
-// // // // //       JSON.stringify(imagePaths),
-// // // // //       req.body.specifications,
-// // // // //       req.body.featured === "1" ? 1 : 0,
-// // // // //       videoPath,
-// // // // //       id
-// // // // //     );
-
-// // // // //     res.json({ message: "Updated successfully" });
-// // // // //   }
-// // // // // );
-
-// // // // //   app.delete("/api/products/:id", authenticateToken, (req, res) => {
-// // // // //   db.prepare("DELETE FROM products WHERE id = ?").run(req.params.id);
-// // // // //   res.json({ message: "Deleted successfully" });
-// // // // // });
-
-
-// // // //   app.put(
-// // // //   "/api/products/:id",
-// // // //   authenticateToken,
-// // // //   upload.fields([{ name: "images" }, { name: "video", maxCount: 1 }]),
-// // // //   async (req: any, res) => {
-// // // //     try {
-// // // //       const id = req.params.id;
-
-// // // //       let existingProduct;
-
-// // // //       if (isProduction) {
-// // // //         const result = await pool.query(
-// // // //           "SELECT * FROM products WHERE id = $1",
-// // // //           [id]
-// // // //         );
-// // // //         if (result.rows.length === 0)
-// // // //           return res.status(404).json({ message: "Product not found" });
-
-// // // //         existingProduct = result.rows[0];
-// // // //       } else {
-// // // //         existingProduct = db
-// // // //           .prepare("SELECT * FROM products WHERE id = ?")
-// // // //           .get(id);
-
-// // // //         if (!existingProduct)
-// // // //           return res.status(404).json({ message: "Product not found" });
-// // // //       }
-
-// // // //       const imageFiles = req.files?.images || [];
-// // // //       const videoFile = req.files?.video?.[0];
-
-// // // //       const imagePaths =
-// // // //         imageFiles.length > 0
-// // // //           ? imageFiles.map((file: any) => `/uploads/images/${file.filename}`)
-// // // //           : JSON.parse(existingProduct.images || "[]");
-
-// // // //       const videoPath =
-// // // //         videoFile
-// // // //           ? `/uploads/videos/${videoFile.filename}`
-// // // //           : existingProduct.video;
-
-// // // //       const values = [
-// // // //         req.body.name,
-// // // //         req.body.original_price_inr || null,
-// // // //         req.body.price_inr,
-// // // //         req.body.original_price_usd || null,
-// // // //         req.body.price_usd,
-// // // //         req.body.original_price_eur || null,
-// // // //         req.body.price_eur,
-// // // //         req.body.grade,
-// // // //         req.body.willow_type,
-// // // //         req.body.weight,
-// // // //         req.body.style,
-// // // //         req.body.description,
-// // // //         JSON.stringify(imagePaths),
-// // // //         req.body.specifications,
-// // // //         req.body.featured === "1" ? 1 : 0,
-// // // //         videoPath,
-// // // //         id,
-// // // //       ];
-
-// // // //       if (isProduction) {
-// // // //         await pool.query(
-// // // //           `UPDATE products SET
-// // // //             name = $1,
-// // // //             original_price_inr = $2,
-// // // //             price_inr = $3,
-// // // //             original_price_usd = $4,
-// // // //             price_usd = $5,
-// // // //             original_price_eur = $6,
-// // // //             price_eur = $7,
-// // // //             grade = $8,
-// // // //             willow_type = $9,
-// // // //             weight = $10,
-// // // //             style = $11,
-// // // //             description = $12,
-// // // //             images = $13,
-// // // //             specifications = $14,
-// // // //             featured = $15,
-// // // //             video = $16
-// // // //            WHERE id = $17`,
-// // // //           values
-// // // //         );
-// // // //       } else {
-// // // //         db.prepare(`
-// // // //           UPDATE products SET
-// // // //             name = ?,
-// // // //             original_price_inr = ?,
-// // // //             price_inr = ?,
-// // // //             original_price_usd = ?,
-// // // //             price_usd = ?,
-// // // //             original_price_eur = ?,
-// // // //             price_eur = ?,
-// // // //             grade = ?,
-// // // //             willow_type = ?,
-// // // //             weight = ?,
-// // // //             style = ?,
-// // // //             description = ?,
-// // // //             images = ?,
-// // // //             specifications = ?,
-// // // //             featured = ?,
-// // // //             video = ?
-// // // //            WHERE id = ?
-// // // //         `).run(...values);
-// // // //       }
-
-// // // //       res.json({ message: "Updated successfully" });
-// // // //     } catch (error) {
-// // // //       console.error(error);
-// // // //       res.status(500).json({ message: "Update failed" });
-// // // //     }
-// // // //   }
-// // // // );
-
-// // // //   app.delete("/api/products/:id", authenticateToken, async (req: Request, res: Response) => {
-// // // //   try {
-// // // //     if (isProduction) {
-// // // //       await pool.query("DELETE FROM products WHERE id = $1", [
-// // // //         req.params.id,
-// // // //       ]);
-// // // //     } else {
-// // // //       db.prepare("DELETE FROM products WHERE id = ?").run(
-// // // //         req.params.id
-// // // //       );
-// // // //     }
-
-// // // //     res.json({ message: "Deleted successfully" });
-// // // //   } catch (error) {
-// // // //     console.error(error);
-// // // //     res.status(500).json({ message: "Server error" });
-// // // //   }
-// // // // });
-
-// // // //   // app.post(
-// // // //   //   "/api/products",
-// // // //   //   authenticateToken,
-// // // //   //   upload.fields([{ name: "images" }, { name: "video", maxCount: 1 }]),
-// // // //   //   (req: any, res) => {
-
-// // // //   //     const imageFiles = req.files?.images || [];
-// // // //   //     const videoFile = req.files?.video?.[0];
-
-// // // //   //     const imagePaths = imageFiles.map(
-// // // //   //       (file: any) => `/uploads/images/${file.filename}`
-// // // //   //     );
-
-// // // //   //     const videoPath = videoFile
-// // // //   //       ? `/uploads/videos/${videoFile.filename}`
-// // // //   //       : null;
-
-// // // //   //     const result = db.prepare(`
-// // // //   //       INSERT INTO products
-// // // //   //       (name, original_price_inr, price_inr,
-// // // //   //        original_price_usd, price_usd,
-// // // //   //        original_price_eur, price_eur,
-// // // //   //        grade, willow_type, weight, style,
-// // // //   //        description, images, specifications,
-// // // //   //        featured, video)
-// // // //   //       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-// // // //   //     `).run(
-// // // //   //       req.body.name,
-// // // //   //       req.body.original_price_inr || null,
-// // // //   //       req.body.price_inr,
-// // // //   //       req.body.original_price_usd || null,
-// // // //   //       req.body.price_usd,
-// // // //   //       req.body.original_price_eur || null,
-// // // //   //       req.body.price_eur,
-// // // //   //       req.body.grade,
-// // // //   //       req.body.willow_type,
-// // // //   //       req.body.weight,
-// // // //   //       req.body.style,
-// // // //   //       req.body.description,
-// // // //   //       JSON.stringify(imagePaths),
-// // // //   //       req.body.specifications,
-// // // //   //       req.body.featured === "1" ? 1 : 0,
-// // // //   //       videoPath
-// // // //   //     );
-
-// // // //   //     res.json({ id: result.lastInsertRowid });
-// // // //   //   }
-// // // //   // );
+// // // //   const PORT = process.env.PORT || 3000;
 
 // // // //   app.post(
 // // // //   "/api/products",
 // // // //   authenticateToken,
 // // // //   upload.fields([{ name: "images" }, { name: "video", maxCount: 1 }]),
-// // // //   async (req: any, res) => {
+// // // //   async (req: any, res: Response) => {
 // // // //     try {
 // // // //       const imageFiles = req.files?.images || [];
 // // // //       const videoFile = req.files?.video?.[0];
@@ -1166,25 +1340,6 @@
 // // // //         ? `/uploads/videos/${videoFile.filename}`
 // // // //         : null;
 
-// // // //       const values = [
-// // // //         req.body.name,
-// // // //         req.body.original_price_inr || null,
-// // // //         req.body.price_inr,
-// // // //         req.body.original_price_usd || null,
-// // // //         req.body.price_usd,
-// // // //         req.body.original_price_eur || null,
-// // // //         req.body.price_eur,
-// // // //         req.body.grade,
-// // // //         req.body.willow_type,
-// // // //         req.body.weight,
-// // // //         req.body.style,
-// // // //         req.body.description,
-// // // //         JSON.stringify(imagePaths),
-// // // //         req.body.specifications,
-// // // //         req.body.featured === "1" ? 1 : 0,
-// // // //         videoPath,
-// // // //       ];
-
 // // // //       if (isProduction) {
 // // // //         const result = await pool.query(
 // // // //           `INSERT INTO products
@@ -1196,7 +1351,24 @@
 // // // //            featured, video)
 // // // //            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
 // // // //            RETURNING id`,
-// // // //           values
+// // // //           [
+// // // //             req.body.name,
+// // // //             req.body.original_price_inr || null,
+// // // //             req.body.price_inr,
+// // // //             req.body.original_price_usd || null,
+// // // //             req.body.price_usd,
+// // // //             req.body.original_price_eur || null,
+// // // //             req.body.price_eur,
+// // // //             req.body.grade,
+// // // //             req.body.willow_type,
+// // // //             req.body.weight,
+// // // //             req.body.style,
+// // // //             req.body.description,
+// // // //             JSON.stringify(imagePaths),
+// // // //             req.body.specifications,
+// // // //             req.body.featured === "1" ? 1 : 0,
+// // // //             videoPath,
+// // // //           ]
 // // // //         );
 
 // // // //         return res.json({ id: result.rows[0].id });
@@ -1210,7 +1382,24 @@
 // // // //            description, images, specifications,
 // // // //            featured, video)
 // // // //            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-// // // //         `).run(...values);
+// // // //         `).run(
+// // // //           req.body.name,
+// // // //           req.body.original_price_inr || null,
+// // // //           req.body.price_inr,
+// // // //           req.body.original_price_usd || null,
+// // // //           req.body.price_usd,
+// // // //           req.body.original_price_eur || null,
+// // // //           req.body.price_eur,
+// // // //           req.body.grade,
+// // // //           req.body.willow_type,
+// // // //           req.body.weight,
+// // // //           req.body.style,
+// // // //           req.body.description,
+// // // //           JSON.stringify(imagePaths),
+// // // //           req.body.specifications,
+// // // //           req.body.featured === "1" ? 1 : 0,
+// // // //           videoPath
+// // // //         );
 
 // // // //         return res.json({ id: result.lastInsertRowid });
 // // // //       }
@@ -1221,27 +1410,160 @@
 // // // //   }
 // // // // );
 
-// // // //       // 👇 THIS PART WAS MISSING
-// // // //   if (process.env.NODE_ENV !== "production") {
+// // // //   app.use(express.json());
+// // // //   app.use("/uploads", express.static("uploads"));
+
+// // // //   // 🔥 AUTO CREATE TABLE IN POSTGRES
+// // // //   if (isProduction) {
+// // // //     await pool.query(`
+// // // //       CREATE TABLE IF NOT EXISTS products (
+// // // //         id SERIAL PRIMARY KEY,
+// // // //         name TEXT NOT NULL,
+// // // //         original_price_inr REAL,
+// // // //         price_inr REAL NOT NULL,
+// // // //         original_price_usd REAL,
+// // // //         price_usd REAL NOT NULL,
+// // // //         original_price_eur REAL,
+// // // //         price_eur REAL NOT NULL,
+// // // //         grade TEXT,
+// // // //         willow_type TEXT,
+// // // //         weight TEXT,
+// // // //         style TEXT,
+// // // //         description TEXT,
+// // // //         images TEXT,
+// // // //         specifications TEXT,
+// // // //         featured INTEGER DEFAULT 0,
+// // // //         video TEXT,
+// // // //         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+// // // //       );
+// // // //     `);
+
+// // // //     console.log("✅ PostgreSQL table verified/created");
+// // // //   }
+
+// // // //   // ---------------- ADMIN LOGIN ----------------
+// // // //   app.post("/api/admin/login", (req: Request, res: Response) => {
+// // // //     const { username, password } = req.body;
+
+// // // //     const adminUser = process.env.ADMIN_USERNAME || "admin";
+// // // //     const adminPass = process.env.ADMIN_PASSWORD || "password123";
+
+// // // //     if (username === adminUser && password === adminPass) {
+// // // //       const token = jwt.sign(
+// // // //         { username },
+// // // //         process.env.JWT_SECRET || "secret",
+// // // //         { expiresIn: "24h" }
+// // // //       );
+// // // //       return res.json({ token });
+// // // //     }
+
+// // // //     res.status(401).json({ message: "Invalid credentials" });
+// // // //   });
+
+// // // //   const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
+// // // //     const authHeader = req.headers["authorization"];
+// // // //     const token = authHeader && authHeader.split(" ")[1];
+// // // //     if (!token) return res.sendStatus(401);
+// // // //     jwt.verify(token, process.env.JWT_SECRET || "secret", (err) => {
+// // // //       if (err) return res.sendStatus(403);
+// // // //       next();
+// // // //     });
+// // // //   };
+
+// // // //   // ---------------- GET ALL PRODUCTS ----------------
+// // // //   app.get("/api/products", async (req: Request, res: Response) => {
+// // // //     try {
+// // // //       if (isProduction) {
+// // // //         const result = await pool.query(
+// // // //           "SELECT * FROM products ORDER BY created_at DESC"
+// // // //         );
+
+// // // //         return res.json(
+// // // //           result.rows.map((p: any) => ({
+// // // //             ...p,
+// // // //             images: p.images ? JSON.parse(p.images) : [],
+// // // //             specifications: p.specifications ? JSON.parse(p.specifications) : {}
+// // // //           }))
+// // // //         );
+// // // //       } else {
+// // // //         const products = db
+// // // //           .prepare("SELECT * FROM products ORDER BY created_at DESC")
+// // // //           .all();
+
+// // // //         return res.json(
+// // // //           products.map((p: any) => ({
+// // // //             ...p,
+// // // //             images: p.images ? JSON.parse(p.images) : [],
+// // // //             specifications: p.specifications ? JSON.parse(p.specifications) : {}
+// // // //           }))
+// // // //         );
+// // // //       }
+// // // //     } catch (error) {
+// // // //       console.error(error);
+// // // //       res.status(500).json({ message: "Server error" });
+// // // //     }
+// // // //   });
+
+// // // //   // ---------------- GET PRODUCT BY ID ----------------
+// // // //   app.get("/api/products/:id", async (req: Request, res: Response) => {
+// // // //     try {
+// // // //       if (isProduction) {
+// // // //         const result = await pool.query(
+// // // //           "SELECT * FROM products WHERE id = $1",
+// // // //           [req.params.id]
+// // // //         );
+// // // //         if (result.rows.length === 0)
+// // // //           return res.status(404).json({ message: "Not found" });
+
+// // // //         const product = result.rows[0];
+
+// // // //         return res.json({
+// // // //           ...product,
+// // // //           images: product.images ? JSON.parse(product.images) : [],
+// // // //           specifications: product.specifications ? JSON.parse(product.specifications) : {}
+// // // //         });
+// // // //       } else {
+// // // //         const product = db
+// // // //           .prepare("SELECT * FROM products WHERE id = ?")
+// // // //           .get(req.params.id);
+
+// // // //         if (!product)
+// // // //           return res.status(404).json({ message: "Not found" });
+
+// // // //         return res.json({
+// // // //           ...product,
+// // // //           images: product.images ? JSON.parse(product.images) : [],
+// // // //           specifications: product.specifications ? JSON.parse(product.specifications) : {}
+// // // //         });
+// // // //       }
+// // // //     } catch (error) {
+// // // //       console.error(error);
+// // // //       res.status(500).json({ message: "Server error" });
+// // // //     }
+// // // //   });
+
+// // // //   // ---------------- SERVE FRONTEND ----------------
+// // // //   if (!isProduction) {
 // // // //     const vite = await createViteServer({
 // // // //       server: { middlewareMode: true },
 // // // //       appType: "spa",
 // // // //     });
 // // // //     app.use(vite.middlewares);
 // // // //   } else {
-// // // //   // __dirname points to "dist" when compiled, so go up one level
-// // // //   const clientDistPath = path.join(__dirname, "../dist");
-// // // //   app.use(express.static(clientDistPath));
-// // // //   app.get("*", (req, res) => {
-// // // //     res.sendFile(path.join(clientDistPath, "index.html"));
-// // // //   });
-// // // // }
+// // // //     const clientDistPath = path.join(__dirname, "../dist");
+// // // //     app.use(express.static(clientDistPath));
+// // // //     app.get("*", (req, res) => {
+// // // //       res.sendFile(path.join(clientDistPath, "index.html"));
+// // // //     });
+// // // //   }
+
 // // // //   app.listen(PORT, () => {
-// // // //     console.log(`Server running on http://localhost:${PORT}`);
+// // // //     console.log(`🚀 Server running on port ${PORT}`);
 // // // //   });
 // // // // }
 
 // // // // startServer();
+
 
 // // // import express, { Request, Response, NextFunction } from "express";
 // // // import { createServer as createViteServer } from "vite";
@@ -1274,7 +1596,6 @@
 // // // } else {
 // // //   db = new Database("cricface.db");
 
-// // //   // Create table locally if not exists
 // // //   db.exec(`
 // // //     CREATE TABLE IF NOT EXISTS products (
 // // //       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -1299,7 +1620,7 @@
 // // //   `);
 // // // }
 
-// // // // Ensure upload folders exist
+// // // // Ensure upload folders
 // // // if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
 // // // if (!fs.existsSync("uploads/images")) fs.mkdirSync("uploads/images", { recursive: true });
 // // // if (!fs.existsSync("uploads/videos")) fs.mkdirSync("uploads/videos", { recursive: true });
@@ -1311,104 +1632,17 @@
 // // //   },
 // // //   filename: (req: any, file: any, cb: any) => {
 // // //     cb(null, Date.now() + "-" + file.originalname);
-// // //   }
+// // //   },
 // // // });
 
 // // // const upload = multer({
 // // //   storage,
-// // //   limits: { fileSize: 200 * 1024 * 1024 }
+// // //   limits: { fileSize: 200 * 1024 * 1024 },
 // // // });
 
 // // // async function startServer() {
 // // //   const app = express();
 // // //   const PORT = process.env.PORT || 3000;
-
-// // //   app.post(
-// // //   "/api/products",
-// // //   authenticateToken,
-// // //   upload.fields([{ name: "images" }, { name: "video", maxCount: 1 }]),
-// // //   async (req: any, res: Response) => {
-// // //     try {
-// // //       const imageFiles = req.files?.images || [];
-// // //       const videoFile = req.files?.video?.[0];
-
-// // //       const imagePaths = imageFiles.map(
-// // //         (file: any) => `/uploads/images/${file.filename}`
-// // //       );
-
-// // //       const videoPath = videoFile
-// // //         ? `/uploads/videos/${videoFile.filename}`
-// // //         : null;
-
-// // //       if (isProduction) {
-// // //         const result = await pool.query(
-// // //           `INSERT INTO products
-// // //           (name, original_price_inr, price_inr,
-// // //            original_price_usd, price_usd,
-// // //            original_price_eur, price_eur,
-// // //            grade, willow_type, weight, style,
-// // //            description, images, specifications,
-// // //            featured, video)
-// // //            VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
-// // //            RETURNING id`,
-// // //           [
-// // //             req.body.name,
-// // //             req.body.original_price_inr || null,
-// // //             req.body.price_inr,
-// // //             req.body.original_price_usd || null,
-// // //             req.body.price_usd,
-// // //             req.body.original_price_eur || null,
-// // //             req.body.price_eur,
-// // //             req.body.grade,
-// // //             req.body.willow_type,
-// // //             req.body.weight,
-// // //             req.body.style,
-// // //             req.body.description,
-// // //             JSON.stringify(imagePaths),
-// // //             req.body.specifications,
-// // //             req.body.featured === "1" ? 1 : 0,
-// // //             videoPath,
-// // //           ]
-// // //         );
-
-// // //         return res.json({ id: result.rows[0].id });
-// // //       } else {
-// // //         const result = db.prepare(`
-// // //           INSERT INTO products
-// // //           (name, original_price_inr, price_inr,
-// // //            original_price_usd, price_usd,
-// // //            original_price_eur, price_eur,
-// // //            grade, willow_type, weight, style,
-// // //            description, images, specifications,
-// // //            featured, video)
-// // //            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-// // //         `).run(
-// // //           req.body.name,
-// // //           req.body.original_price_inr || null,
-// // //           req.body.price_inr,
-// // //           req.body.original_price_usd || null,
-// // //           req.body.price_usd,
-// // //           req.body.original_price_eur || null,
-// // //           req.body.price_eur,
-// // //           req.body.grade,
-// // //           req.body.willow_type,
-// // //           req.body.weight,
-// // //           req.body.style,
-// // //           req.body.description,
-// // //           JSON.stringify(imagePaths),
-// // //           req.body.specifications,
-// // //           req.body.featured === "1" ? 1 : 0,
-// // //           videoPath
-// // //         );
-
-// // //         return res.json({ id: result.lastInsertRowid });
-// // //       }
-// // //     } catch (error) {
-// // //       console.error(error);
-// // //       res.status(500).json({ message: "Insert failed" });
-// // //     }
-// // //   }
-// // // );
 
 // // //   app.use(express.json());
 // // //   app.use("/uploads", express.static("uploads"));
@@ -1441,7 +1675,8 @@
 // // //     console.log("✅ PostgreSQL table verified/created");
 // // //   }
 
-// // //   // ---------------- ADMIN LOGIN ----------------
+// // //   // ---------------- AUTH ----------------
+
 // // //   app.post("/api/admin/login", (req: Request, res: Response) => {
 // // //     const { username, password } = req.body;
 
@@ -1460,41 +1695,49 @@
 // // //     res.status(401).json({ message: "Invalid credentials" });
 // // //   });
 
-// // //   const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
+// // //   const authenticateToken = (
+// // //     req: Request,
+// // //     res: Response,
+// // //     next: NextFunction
+// // //   ) => {
 // // //     const authHeader = req.headers["authorization"];
 // // //     const token = authHeader && authHeader.split(" ")[1];
 // // //     if (!token) return res.sendStatus(401);
+
 // // //     jwt.verify(token, process.env.JWT_SECRET || "secret", (err) => {
 // // //       if (err) return res.sendStatus(403);
 // // //       next();
 // // //     });
 // // //   };
 
-// // //   // ---------------- GET ALL PRODUCTS ----------------
+// // //   // ---------------- GET ALL ----------------
+
 // // //   app.get("/api/products", async (req: Request, res: Response) => {
 // // //     try {
 // // //       if (isProduction) {
 // // //         const result = await pool.query(
 // // //           "SELECT * FROM products ORDER BY created_at DESC"
 // // //         );
-
 // // //         return res.json(
 // // //           result.rows.map((p: any) => ({
 // // //             ...p,
 // // //             images: p.images ? JSON.parse(p.images) : [],
-// // //             specifications: p.specifications ? JSON.parse(p.specifications) : {}
+// // //             specifications: p.specifications
+// // //               ? JSON.parse(p.specifications)
+// // //               : {},
 // // //           }))
 // // //         );
 // // //       } else {
 // // //         const products = db
 // // //           .prepare("SELECT * FROM products ORDER BY created_at DESC")
 // // //           .all();
-
 // // //         return res.json(
 // // //           products.map((p: any) => ({
 // // //             ...p,
 // // //             images: p.images ? JSON.parse(p.images) : [],
-// // //             specifications: p.specifications ? JSON.parse(p.specifications) : {}
+// // //             specifications: p.specifications
+// // //               ? JSON.parse(p.specifications)
+// // //               : {},
 // // //           }))
 // // //         );
 // // //       }
@@ -1504,7 +1747,8 @@
 // // //     }
 // // //   });
 
-// // //   // ---------------- GET PRODUCT BY ID ----------------
+// // //   // ---------------- GET ONE ----------------
+
 // // //   app.get("/api/products/:id", async (req: Request, res: Response) => {
 // // //     try {
 // // //       if (isProduction) {
@@ -1512,6 +1756,7 @@
 // // //           "SELECT * FROM products WHERE id = $1",
 // // //           [req.params.id]
 // // //         );
+
 // // //         if (result.rows.length === 0)
 // // //           return res.status(404).json({ message: "Not found" });
 
@@ -1520,7 +1765,9 @@
 // // //         return res.json({
 // // //           ...product,
 // // //           images: product.images ? JSON.parse(product.images) : [],
-// // //           specifications: product.specifications ? JSON.parse(product.specifications) : {}
+// // //           specifications: product.specifications
+// // //             ? JSON.parse(product.specifications)
+// // //             : {},
 // // //         });
 // // //       } else {
 // // //         const product = db
@@ -1533,7 +1780,9 @@
 // // //         return res.json({
 // // //           ...product,
 // // //           images: product.images ? JSON.parse(product.images) : [],
-// // //           specifications: product.specifications ? JSON.parse(product.specifications) : {}
+// // //           specifications: product.specifications
+// // //             ? JSON.parse(product.specifications)
+// // //             : {},
 // // //         });
 // // //       }
 // // //     } catch (error) {
@@ -1542,7 +1791,255 @@
 // // //     }
 // // //   });
 
-// // //   // ---------------- SERVE FRONTEND ----------------
+// // //   // ---------------- INSERT ----------------
+
+// // //   app.post(
+// // //     "/api/products",
+// // //     authenticateToken,
+// // //     upload.fields([{ name: "images" }, { name: "video", maxCount: 1 }]),
+// // //     async (req: any, res: Response) => {
+// // //       try {
+// // //         const imageFiles = req.files?.images || [];
+// // //         const videoFile = req.files?.video?.[0];
+
+// // //         const imagePaths = imageFiles.map(
+// // //           (file: any) => `/uploads/images/${file.filename}`
+// // //         );
+
+// // //         const videoPath = videoFile
+// // //           ? `/uploads/videos/${videoFile.filename}`
+// // //           : null;
+
+// // //         if (isProduction) {
+// // //           const result = await pool.query(
+// // //             `INSERT INTO products
+// // //             (name, original_price_inr, price_inr,
+// // //              original_price_usd, price_usd,
+// // //              original_price_eur, price_eur,
+// // //              grade, willow_type, weight, style,
+// // //              description, images, specifications,
+// // //              featured, video)
+// // //              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+// // //              RETURNING id`,
+// // //             [
+// // //               req.body.name,
+// // //               req.body.original_price_inr || null,
+// // //               req.body.price_inr,
+// // //               req.body.original_price_usd || null,
+// // //               req.body.price_usd,
+// // //               req.body.original_price_eur || null,
+// // //               req.body.price_eur,
+// // //               req.body.grade,
+// // //               req.body.willow_type,
+// // //               req.body.weight,
+// // //               req.body.style,
+// // //               req.body.description,
+// // //               JSON.stringify(imagePaths),
+// // //               req.body.specifications,
+// // //               req.body.featured === "1" ? 1 : 0,
+// // //               videoPath,
+// // //             ]
+// // //           );
+
+// // //           return res.json({ id: result.rows[0].id });
+// // //         } else {
+// // //           const result = db
+// // //             .prepare(
+// // //               `INSERT INTO products
+// // //               (name, original_price_inr, price_inr,
+// // //                original_price_usd, price_usd,
+// // //                original_price_eur, price_eur,
+// // //                grade, willow_type, weight, style,
+// // //                description, images, specifications,
+// // //                featured, video)
+// // //                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+// // //             )
+// // //             .run(
+// // //               req.body.name,
+// // //               req.body.original_price_inr || null,
+// // //               req.body.price_inr,
+// // //               req.body.original_price_usd || null,
+// // //               req.body.price_usd,
+// // //               req.body.original_price_eur || null,
+// // //               req.body.price_eur,
+// // //               req.body.grade,
+// // //               req.body.willow_type,
+// // //               req.body.weight,
+// // //               req.body.style,
+// // //               req.body.description,
+// // //               JSON.stringify(imagePaths),
+// // //               req.body.specifications,
+// // //               req.body.featured === "1" ? 1 : 0,
+// // //               videoPath
+// // //             );
+
+// // //           return res.json({ id: result.lastInsertRowid });
+// // //         }
+// // //       } catch (error) {
+// // //         console.error(error);
+// // //         res.status(500).json({ message: "Insert failed" });
+// // //       }
+// // //     }
+// // //   );
+
+// // //   // ---------------- DELETE ----------------
+
+// // //   app.delete(
+// // //     "/api/products/:id",
+// // //     authenticateToken,
+// // //     async (req: Request, res: Response) => {
+// // //       try {
+// // //         if (isProduction) {
+// // //           await pool.query("DELETE FROM products WHERE id = $1", [
+// // //             req.params.id,
+// // //           ]);
+// // //         } else {
+// // //           db.prepare("DELETE FROM products WHERE id = ?").run(
+// // //             req.params.id
+// // //           );
+// // //         }
+
+// // //         res.json({ message: "Deleted successfully" });
+// // //       } catch (error) {
+// // //         console.error(error);
+// // //         res.status(500).json({ message: "Server error" });
+// // //       }
+// // //     }
+// // //   );
+
+// // //   app.put(
+// // //   "/api/products/:id",
+// // //   authenticateToken,
+// // //   upload.fields([{ name: "images" }, { name: "video", maxCount: 1 }]),
+// // //   async (req: any, res: Response) => {
+// // //     try {
+// // //       const id = req.params.id;
+
+// // //       let existingProduct;
+
+// // //       if (isProduction) {
+// // //         const result = await pool.query(
+// // //           "SELECT * FROM products WHERE id = $1",
+// // //           [id]
+// // //         );
+
+// // //         if (result.rows.length === 0)
+// // //           return res.status(404).json({ message: "Product not found" });
+
+// // //         existingProduct = result.rows[0];
+// // //       } else {
+// // //         existingProduct = db
+// // //           .prepare("SELECT * FROM products WHERE id = ?")
+// // //           .get(id);
+
+// // //         if (!existingProduct)
+// // //           return res.status(404).json({ message: "Product not found" });
+// // //       }
+
+// // //       const imageFiles = req.files?.images || [];
+// // //       const videoFile = req.files?.video?.[0];
+
+// // //       const imagePaths =
+// // //         imageFiles.length > 0
+// // //           ? imageFiles.map((file: any) => `/uploads/images/${file.filename}`)
+// // //           : JSON.parse(existingProduct.images || "[]");
+
+// // //       const videoPath =
+// // //         videoFile
+// // //           ? `/uploads/videos/${videoFile.filename}`
+// // //           : existingProduct.video;
+
+// // //       if (isProduction) {
+// // //         await pool.query(
+// // //           `UPDATE products SET
+// // //             name = $1,
+// // //             original_price_inr = $2,
+// // //             price_inr = $3,
+// // //             original_price_usd = $4,
+// // //             price_usd = $5,
+// // //             original_price_eur = $6,
+// // //             price_eur = $7,
+// // //             grade = $8,
+// // //             willow_type = $9,
+// // //             weight = $10,
+// // //             style = $11,
+// // //             description = $12,
+// // //             images = $13,
+// // //             specifications = $14,
+// // //             featured = $15,
+// // //             video = $16
+// // //            WHERE id = $17`,
+// // //           [
+// // //             req.body.name,
+// // //             req.body.original_price_inr || null,
+// // //             req.body.price_inr,
+// // //             req.body.original_price_usd || null,
+// // //             req.body.price_usd,
+// // //             req.body.original_price_eur || null,
+// // //             req.body.price_eur,
+// // //             req.body.grade,
+// // //             req.body.willow_type,
+// // //             req.body.weight,
+// // //             req.body.style,
+// // //             req.body.description,
+// // //             JSON.stringify(imagePaths),
+// // //             req.body.specifications,
+// // //             req.body.featured === "1" ? 1 : 0,
+// // //             videoPath,
+// // //             id,
+// // //           ]
+// // //         );
+// // //       } else {
+// // //         db.prepare(`
+// // //           UPDATE products SET
+// // //             name = ?,
+// // //             original_price_inr = ?,
+// // //             price_inr = ?,
+// // //             original_price_usd = ?,
+// // //             price_usd = ?,
+// // //             original_price_eur = ?,
+// // //             price_eur = ?,
+// // //             grade = ?,
+// // //             willow_type = ?,
+// // //             weight = ?,
+// // //             style = ?,
+// // //             description = ?,
+// // //             images = ?,
+// // //             specifications = ?,
+// // //             featured = ?,
+// // //             video = ?
+// // //            WHERE id = ?
+// // //         `).run(
+// // //           req.body.name,
+// // //           req.body.original_price_inr || null,
+// // //           req.body.price_inr,
+// // //           req.body.original_price_usd || null,
+// // //           req.body.price_usd,
+// // //           req.body.original_price_eur || null,
+// // //           req.body.price_eur,
+// // //           req.body.grade,
+// // //           req.body.willow_type,
+// // //           req.body.weight,
+// // //           req.body.style,
+// // //           req.body.description,
+// // //           JSON.stringify(imagePaths),
+// // //           req.body.specifications,
+// // //           req.body.featured === "1" ? 1 : 0,
+// // //           videoPath,
+// // //           id
+// // //         );
+// // //       }
+
+// // //       res.json({ message: "Updated successfully" });
+// // //     } catch (error) {
+// // //       console.error(error);
+// // //       res.status(500).json({ message: "Update failed" });
+// // //     }
+// // //   }
+// // // );
+
+// // //   // ---------------- FRONTEND ----------------
+
 // // //   if (!isProduction) {
 // // //     const vite = await createViteServer({
 // // //       server: { middlewareMode: true },
@@ -1564,7 +2061,6 @@
 
 // // // startServer();
 
-
 // // import express, { Request, Response, NextFunction } from "express";
 // // import { createServer as createViteServer } from "vite";
 // // import Database from "better-sqlite3";
@@ -1575,6 +2071,8 @@
 // // import multer from "multer";
 // // import fs from "fs";
 // // import pkg from "pg";
+// // import { v2 as cloudinary } from "cloudinary";
+// // import { CloudinaryStorage } from "multer-storage-cloudinary";
 
 // // dotenv.config();
 
@@ -1618,36 +2116,95 @@
 // //       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 // //     )
 // //   `);
+
+// //   db.exec(`
+// //     CREATE TABLE IF NOT EXISTS inquiries (
+// //       id INTEGER PRIMARY KEY AUTOINCREMENT,
+// //       name TEXT NOT NULL,
+// //       contact TEXT NOT NULL,
+// //       email TEXT,
+// //       product_name TEXT,
+// //       message TEXT,
+// //       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+// //     )
+// //   `);
 // // }
 
-// // // Ensure upload folders
-// // if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
-// // if (!fs.existsSync("uploads/images")) fs.mkdirSync("uploads/images", { recursive: true });
-// // if (!fs.existsSync("uploads/videos")) fs.mkdirSync("uploads/videos", { recursive: true });
+// // // ─── Cloudinary config (only used in production) ──────────────────────────────
+// // if (isProduction) {
+// //   cloudinary.config({
+// //     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+// //     api_key: process.env.CLOUDINARY_API_KEY,
+// //     api_secret: process.env.CLOUDINARY_API_SECRET,
+// //   });
+// // }
 
-// // const storage = multer.diskStorage({
-// //   destination: (req: any, file: any, cb: any) => {
-// //     if (file.mimetype.startsWith("video")) cb(null, "uploads/videos/");
-// //     else cb(null, "uploads/images/");
-// //   },
-// //   filename: (req: any, file: any, cb: any) => {
-// //     cb(null, Date.now() + "-" + file.originalname);
-// //   },
-// // });
+// // // ─── Multer storage ───────────────────────────────────────────────────────────-
+// // // Production: upload directly to Cloudinary
+// // // Development: save to local disk as before
 
-// // const upload = multer({
-// //   storage,
-// //   limits: { fileSize: 200 * 1024 * 1024 },
-// // });
+// // let upload: multer.Multer;
+
+// // if (isProduction) {
+// //   const cloudinaryStorage = new CloudinaryStorage({
+// //     cloudinary,
+// //     params: async (_req: any, file: any) => ({
+// //       folder: "cricface",
+// //       resource_type: file.mimetype.startsWith("video") ? "video" : "image",
+// //       allowed_formats: ["jpg", "jpeg", "png", "webp", "mp4", "mov", "MP4", "MOV"],
+// //     }),
+// //   });
+
+// //   upload = multer({
+// //     storage: cloudinaryStorage,
+// //     limits: { fileSize: 200 * 1024 * 1024 },
+// //   });
+// // } else {
+// //   // Local disk storage for dev
+// //   if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
+// //   if (!fs.existsSync("uploads/images")) fs.mkdirSync("uploads/images", { recursive: true });
+// //   if (!fs.existsSync("uploads/videos")) fs.mkdirSync("uploads/videos", { recursive: true });
+
+// //   const diskStorage = multer.diskStorage({
+// //     destination: (_req: any, file: any, cb: any) => {
+// //       if (file.mimetype.startsWith("video")) cb(null, "uploads/videos/");
+// //       else cb(null, "uploads/images/");
+// //     },
+// //     filename: (_req: any, file: any, cb: any) => {
+// //       cb(null, Date.now() + "-" + file.originalname);
+// //     },
+// //   });
+
+// //   upload = multer({
+// //     storage: diskStorage,
+// //     limits: { fileSize: 200 * 1024 * 1024 },
+// //   });
+// // }
+
+// // // ─── Helper: get the URL from an uploaded file ────────────────────────────────
+// // // In production: Cloudinary sets file.path to the secure URL
+// // // In development: build local path from filename
+// // function getFileUrl(file: Express.Multer.File, type: "image" | "video"): string {
+// //   if (isProduction) {
+// //     return (file as any).path; // Cloudinary URL
+// //   }
+// //   return type === "video"
+// //     ? `/uploads/videos/${file.filename}`
+// //     : `/uploads/images/${file.filename}`;
+// // }
 
 // // async function startServer() {
 // //   const app = express();
 // //   const PORT = process.env.PORT || 3000;
 
 // //   app.use(express.json());
-// //   app.use("/uploads", express.static("uploads"));
 
-// //   // 🔥 AUTO CREATE TABLE IN POSTGRES
+// //   // Serve local uploads only in dev
+// //   if (!isProduction) {
+// //     app.use("/uploads", express.static("uploads"));
+// //   }
+
+// //   // ─── AUTO CREATE TABLES IN POSTGRES ─────────────────────────────────────────
 // //   if (isProduction) {
 // //     await pool.query(`
 // //       CREATE TABLE IF NOT EXISTS products (
@@ -1672,7 +2229,19 @@
 // //       );
 // //     `);
 
-// //     console.log("✅ PostgreSQL table verified/created");
+// //     await pool.query(`
+// //       CREATE TABLE IF NOT EXISTS inquiries (
+// //         id SERIAL PRIMARY KEY,
+// //         name TEXT NOT NULL,
+// //         contact TEXT NOT NULL,
+// //         email TEXT,
+// //         product_name TEXT,
+// //         message TEXT,
+// //         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+// //       );
+// //     `);
+
+// //     console.log("✅ PostgreSQL tables verified/created");
 // //   }
 
 // //   // ---------------- AUTH ----------------
@@ -1722,9 +2291,7 @@
 // //           result.rows.map((p: any) => ({
 // //             ...p,
 // //             images: p.images ? JSON.parse(p.images) : [],
-// //             specifications: p.specifications
-// //               ? JSON.parse(p.specifications)
-// //               : {},
+// //             specifications: p.specifications ? JSON.parse(p.specifications) : {},
 // //           }))
 // //         );
 // //       } else {
@@ -1735,9 +2302,7 @@
 // //           products.map((p: any) => ({
 // //             ...p,
 // //             images: p.images ? JSON.parse(p.images) : [],
-// //             specifications: p.specifications
-// //               ? JSON.parse(p.specifications)
-// //               : {},
+// //             specifications: p.specifications ? JSON.parse(p.specifications) : {},
 // //           }))
 // //         );
 // //       }
@@ -1761,28 +2326,22 @@
 // //           return res.status(404).json({ message: "Not found" });
 
 // //         const product = result.rows[0];
-
 // //         return res.json({
 // //           ...product,
 // //           images: product.images ? JSON.parse(product.images) : [],
-// //           specifications: product.specifications
-// //             ? JSON.parse(product.specifications)
-// //             : {},
+// //           specifications: product.specifications ? JSON.parse(product.specifications) : {},
 // //         });
 // //       } else {
 // //         const product = db
 // //           .prepare("SELECT * FROM products WHERE id = ?")
 // //           .get(req.params.id);
 
-// //         if (!product)
-// //           return res.status(404).json({ message: "Not found" });
+// //         if (!product) return res.status(404).json({ message: "Not found" });
 
 // //         return res.json({
 // //           ...product,
 // //           images: product.images ? JSON.parse(product.images) : [],
-// //           specifications: product.specifications
-// //             ? JSON.parse(product.specifications)
-// //             : {},
+// //           specifications: product.specifications ? JSON.parse(product.specifications) : {},
 // //         });
 // //       }
 // //     } catch (error) {
@@ -1799,16 +2358,11 @@
 // //     upload.fields([{ name: "images" }, { name: "video", maxCount: 1 }]),
 // //     async (req: any, res: Response) => {
 // //       try {
-// //         const imageFiles = req.files?.images || [];
-// //         const videoFile = req.files?.video?.[0];
+// //         const imageFiles: Express.Multer.File[] = req.files?.images || [];
+// //         const videoFile: Express.Multer.File | undefined = req.files?.video?.[0];
 
-// //         const imagePaths = imageFiles.map(
-// //           (file: any) => `/uploads/images/${file.filename}`
-// //         );
-
-// //         const videoPath = videoFile
-// //           ? `/uploads/videos/${videoFile.filename}`
-// //           : null;
+// //         const imagePaths = imageFiles.map((file) => getFileUrl(file, "image"));
+// //         const videoPath = videoFile ? getFileUrl(videoFile, "video") : null;
 
 // //         if (isProduction) {
 // //           const result = await pool.query(
@@ -1840,7 +2394,6 @@
 // //               videoPath,
 // //             ]
 // //           );
-
 // //           return res.json({ id: result.rows[0].id });
 // //         } else {
 // //           const result = db
@@ -1872,7 +2425,6 @@
 // //               req.body.featured === "1" ? 1 : 0,
 // //               videoPath
 // //             );
-
 // //           return res.json({ id: result.lastInsertRowid });
 // //         }
 // //       } catch (error) {
@@ -1890,15 +2442,10 @@
 // //     async (req: Request, res: Response) => {
 // //       try {
 // //         if (isProduction) {
-// //           await pool.query("DELETE FROM products WHERE id = $1", [
-// //             req.params.id,
-// //           ]);
+// //           await pool.query("DELETE FROM products WHERE id = $1", [req.params.id]);
 // //         } else {
-// //           db.prepare("DELETE FROM products WHERE id = ?").run(
-// //             req.params.id
-// //           );
+// //           db.prepare("DELETE FROM products WHERE id = ?").run(req.params.id);
 // //         }
-
 // //         res.json({ message: "Deleted successfully" });
 // //       } catch (error) {
 // //         console.error(error);
@@ -1907,69 +2454,107 @@
 // //     }
 // //   );
 
+// //   // ---------------- UPDATE ----------------
+
 // //   app.put(
-// //   "/api/products/:id",
-// //   authenticateToken,
-// //   upload.fields([{ name: "images" }, { name: "video", maxCount: 1 }]),
-// //   async (req: any, res: Response) => {
-// //     try {
-// //       const id = req.params.id;
+// //     "/api/products/:id",
+// //     authenticateToken,
+// //     upload.fields([{ name: "images" }, { name: "video", maxCount: 1 }]),
+// //     async (req: any, res: Response) => {
+// //       try {
+// //         const id = req.params.id;
+// //         let existingProduct: any;
 
-// //       let existingProduct;
+// //         if (isProduction) {
+// //           const result = await pool.query(
+// //             "SELECT * FROM products WHERE id = $1",
+// //             [id]
+// //           );
+// //           if (result.rows.length === 0)
+// //             return res.status(404).json({ message: "Product not found" });
+// //           existingProduct = result.rows[0];
+// //         } else {
+// //           existingProduct = db
+// //             .prepare("SELECT * FROM products WHERE id = ?")
+// //             .get(id);
+// //           if (!existingProduct)
+// //             return res.status(404).json({ message: "Product not found" });
+// //         }
 
-// //       if (isProduction) {
-// //         const result = await pool.query(
-// //           "SELECT * FROM products WHERE id = $1",
-// //           [id]
-// //         );
+// //         const imageFiles: Express.Multer.File[] = req.files?.images || [];
+// //         const videoFile: Express.Multer.File | undefined = req.files?.video?.[0];
 
-// //         if (result.rows.length === 0)
-// //           return res.status(404).json({ message: "Product not found" });
+// //         // If new files uploaded use them, otherwise keep existing URLs from DB
+// //         const imagePaths =
+// //           imageFiles.length > 0
+// //             ? imageFiles.map((file) => getFileUrl(file, "image"))
+// //             : JSON.parse(existingProduct.images || "[]");
 
-// //         existingProduct = result.rows[0];
-// //       } else {
-// //         existingProduct = db
-// //           .prepare("SELECT * FROM products WHERE id = ?")
-// //           .get(id);
-
-// //         if (!existingProduct)
-// //           return res.status(404).json({ message: "Product not found" });
-// //       }
-
-// //       const imageFiles = req.files?.images || [];
-// //       const videoFile = req.files?.video?.[0];
-
-// //       const imagePaths =
-// //         imageFiles.length > 0
-// //           ? imageFiles.map((file: any) => `/uploads/images/${file.filename}`)
-// //           : JSON.parse(existingProduct.images || "[]");
-
-// //       const videoPath =
-// //         videoFile
-// //           ? `/uploads/videos/${videoFile.filename}`
+// //         const videoPath = videoFile
+// //           ? getFileUrl(videoFile, "video")
 // //           : existingProduct.video;
 
-// //       if (isProduction) {
-// //         await pool.query(
-// //           `UPDATE products SET
-// //             name = $1,
-// //             original_price_inr = $2,
-// //             price_inr = $3,
-// //             original_price_usd = $4,
-// //             price_usd = $5,
-// //             original_price_eur = $6,
-// //             price_eur = $7,
-// //             grade = $8,
-// //             willow_type = $9,
-// //             weight = $10,
-// //             style = $11,
-// //             description = $12,
-// //             images = $13,
-// //             specifications = $14,
-// //             featured = $15,
-// //             video = $16
-// //            WHERE id = $17`,
-// //           [
+// //         if (isProduction) {
+// //           await pool.query(
+// //             `UPDATE products SET
+// //               name = $1,
+// //               original_price_inr = $2,
+// //               price_inr = $3,
+// //               original_price_usd = $4,
+// //               price_usd = $5,
+// //               original_price_eur = $6,
+// //               price_eur = $7,
+// //               grade = $8,
+// //               willow_type = $9,
+// //               weight = $10,
+// //               style = $11,
+// //               description = $12,
+// //               images = $13,
+// //               specifications = $14,
+// //               featured = $15,
+// //               video = $16
+// //              WHERE id = $17`,
+// //             [
+// //               req.body.name,
+// //               req.body.original_price_inr || null,
+// //               req.body.price_inr,
+// //               req.body.original_price_usd || null,
+// //               req.body.price_usd,
+// //               req.body.original_price_eur || null,
+// //               req.body.price_eur,
+// //               req.body.grade,
+// //               req.body.willow_type,
+// //               req.body.weight,
+// //               req.body.style,
+// //               req.body.description,
+// //               JSON.stringify(imagePaths),
+// //               req.body.specifications,
+// //               req.body.featured === "1" ? 1 : 0,
+// //               videoPath,
+// //               id,
+// //             ]
+// //           );
+// //         } else {
+// //           db.prepare(`
+// //             UPDATE products SET
+// //               name = ?,
+// //               original_price_inr = ?,
+// //               price_inr = ?,
+// //               original_price_usd = ?,
+// //               price_usd = ?,
+// //               original_price_eur = ?,
+// //               price_eur = ?,
+// //               grade = ?,
+// //               willow_type = ?,
+// //               weight = ?,
+// //               style = ?,
+// //               description = ?,
+// //               images = ?,
+// //               specifications = ?,
+// //               featured = ?,
+// //               video = ?
+// //              WHERE id = ?
+// //           `).run(
 // //             req.body.name,
 // //             req.body.original_price_inr || null,
 // //             req.body.price_inr,
@@ -1986,57 +2571,57 @@
 // //             req.body.specifications,
 // //             req.body.featured === "1" ? 1 : 0,
 // //             videoPath,
-// //             id,
-// //           ]
+// //             id
+// //           );
+// //         }
+
+// //         res.json({ message: "Updated successfully" });
+// //       } catch (error) {
+// //         console.error(error);
+// //         res.status(500).json({ message: "Update failed" });
+// //       }
+// //     }
+// //   );
+
+// //   // ---------------- INQUIRIES ----------------
+
+// //   app.post("/api/inquiries", async (req: Request, res: Response) => {
+// //     try {
+// //       const { name, contact, email, product_name, message } = req.body;
+// //       if (isProduction) {
+// //         await pool.query(
+// //           `INSERT INTO inquiries (name, contact, email, product_name, message)
+// //            VALUES ($1, $2, $3, $4, $5)`,
+// //           [name, contact, email || null, product_name || null, message]
 // //         );
 // //       } else {
-// //         db.prepare(`
-// //           UPDATE products SET
-// //             name = ?,
-// //             original_price_inr = ?,
-// //             price_inr = ?,
-// //             original_price_usd = ?,
-// //             price_usd = ?,
-// //             original_price_eur = ?,
-// //             price_eur = ?,
-// //             grade = ?,
-// //             willow_type = ?,
-// //             weight = ?,
-// //             style = ?,
-// //             description = ?,
-// //             images = ?,
-// //             specifications = ?,
-// //             featured = ?,
-// //             video = ?
-// //            WHERE id = ?
-// //         `).run(
-// //           req.body.name,
-// //           req.body.original_price_inr || null,
-// //           req.body.price_inr,
-// //           req.body.original_price_usd || null,
-// //           req.body.price_usd,
-// //           req.body.original_price_eur || null,
-// //           req.body.price_eur,
-// //           req.body.grade,
-// //           req.body.willow_type,
-// //           req.body.weight,
-// //           req.body.style,
-// //           req.body.description,
-// //           JSON.stringify(imagePaths),
-// //           req.body.specifications,
-// //           req.body.featured === "1" ? 1 : 0,
-// //           videoPath,
-// //           id
-// //         );
+// //         db.prepare(
+// //           `INSERT INTO inquiries (name, contact, email, product_name, message)
+// //            VALUES (?, ?, ?, ?, ?)`
+// //         ).run(name, contact, email || null, product_name || null, message);
 // //       }
-
-// //       res.json({ message: "Updated successfully" });
+// //       res.json({ message: "Inquiry received" });
 // //     } catch (error) {
 // //       console.error(error);
-// //       res.status(500).json({ message: "Update failed" });
+// //       res.status(500).json({ message: "Server error" });
 // //     }
-// //   }
-// // );
+// //   });
+
+// //   app.get("/api/inquiries", authenticateToken, async (req: Request, res: Response) => {
+// //     try {
+// //       if (isProduction) {
+// //         const result = await pool.query("SELECT * FROM inquiries ORDER BY created_at DESC");
+// //         return res.json(result.rows);
+// //       } else {
+// //         return res.json(
+// //           db.prepare("SELECT * FROM inquiries ORDER BY created_at DESC").all()
+// //         );
+// //       }
+// //     } catch (error) {
+// //       console.error(error);
+// //       res.status(500).json({ message: "Server error" });
+// //     }
+// //   });
 
 // //   // ---------------- FRONTEND ----------------
 
@@ -2061,7 +2646,9 @@
 
 // // startServer();
 
+
 // import express, { Request, Response, NextFunction } from "express";
+// import crypto from "crypto";
 // import { createServer as createViteServer } from "vite";
 // import Database from "better-sqlite3";
 // import jwt from "jsonwebtoken";
@@ -2072,7 +2659,6 @@
 // import fs from "fs";
 // import pkg from "pg";
 // import { v2 as cloudinary } from "cloudinary";
-// import { CloudinaryStorage } from "multer-storage-cloudinary";
 
 // dotenv.config();
 
@@ -2130,63 +2716,62 @@
 //   `);
 // }
 
-// // ─── Cloudinary config (only used in production) ──────────────────────────────
-// if (isProduction) {
-//   cloudinary.config({
-//     cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
-//     api_key: process.env.CLOUDINARY_API_KEY,
-//     api_secret: process.env.CLOUDINARY_API_SECRET,
+// // ─── Cloudinary config ────────────────────────────────────────────────────────
+// cloudinary.config({
+//   cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+//   api_key: process.env.CLOUDINARY_API_KEY,
+//   api_secret: process.env.CLOUDINARY_API_SECRET,
+// });
+
+// // ─── Upload a buffer to Cloudinary, returns secure URL ───────────────────────
+// function uploadBufferToCloudinary(
+//   buffer: Buffer,
+//   resourceType: "image" | "video"
+// ): Promise<string> {
+//   return new Promise((resolve, reject) => {
+//     const stream = cloudinary.uploader.upload_stream(
+//       { folder: "cricface", resource_type: resourceType },
+//       (error, result) => {
+//         if (error || !result) return reject(error);
+//         resolve(result.secure_url);
+//       }
+//     );
+//     stream.end(buffer);
 //   });
 // }
 
-// // ─── Multer storage ───────────────────────────────────────────────────────────-
-// // Production: upload directly to Cloudinary
-// // Development: save to local disk as before
-
-// let upload: multer.Multer;
+// // ─── Multer — memory storage in prod, disk in dev ────────────────────────────
+// let upload: any;
 
 // if (isProduction) {
-//   const cloudinaryStorage = new CloudinaryStorage({
-//     cloudinary,
-//     params: async (_req: any, file: any) => ({
-//       folder: "cricface",
-//       resource_type: file.mimetype.startsWith("video") ? "video" : "image",
-//       allowed_formats: ["jpg", "jpeg", "png", "webp", "mp4", "mov", "MP4", "MOV"],
-//     }),
-//   });
-
+//   // Hold files in memory so we can stream to Cloudinary
 //   upload = multer({
-//     storage: cloudinaryStorage,
+//     storage: multer.memoryStorage(),
 //     limits: { fileSize: 200 * 1024 * 1024 },
 //   });
 // } else {
-//   // Local disk storage for dev
 //   if (!fs.existsSync("uploads")) fs.mkdirSync("uploads");
 //   if (!fs.existsSync("uploads/images")) fs.mkdirSync("uploads/images", { recursive: true });
 //   if (!fs.existsSync("uploads/videos")) fs.mkdirSync("uploads/videos", { recursive: true });
 
-//   const diskStorage = multer.diskStorage({
-//     destination: (_req: any, file: any, cb: any) => {
-//       if (file.mimetype.startsWith("video")) cb(null, "uploads/videos/");
-//       else cb(null, "uploads/images/");
-//     },
-//     filename: (_req: any, file: any, cb: any) => {
-//       cb(null, Date.now() + "-" + file.originalname);
-//     },
-//   });
-
 //   upload = multer({
-//     storage: diskStorage,
+//     storage: multer.diskStorage({
+//       destination: (_req: any, file: any, cb: any) => {
+//         cb(null, file.mimetype.startsWith("video") ? "uploads/videos/" : "uploads/images/");
+//       },
+//       filename: (_req: any, file: any, cb: any) => {
+//         cb(null, Date.now() + "-" + file.originalname);
+//       },
+//     }),
 //     limits: { fileSize: 200 * 1024 * 1024 },
 //   });
 // }
 
-// // ─── Helper: get the URL from an uploaded file ────────────────────────────────
-// // In production: Cloudinary sets file.path to the secure URL
-// // In development: build local path from filename
-// function getFileUrl(file: Express.Multer.File, type: "image" | "video"): string {
+// // ─── Resolve file to URL ──────────────────────────────────────────────────────
+// async function getFileUrl(file: any, type: "image" | "video"): Promise<string> {
 //   if (isProduction) {
-//     return (file as any).path; // Cloudinary URL
+//     // file.buffer is available because we used memoryStorage
+//     return await uploadBufferToCloudinary(file.buffer, type);
 //   }
 //   return type === "video"
 //     ? `/uploads/videos/${file.filename}`
@@ -2199,7 +2784,6 @@
 
 //   app.use(express.json());
 
-//   // Serve local uploads only in dev
 //   if (!isProduction) {
 //     app.use("/uploads", express.static("uploads"));
 //   }
@@ -2241,6 +2825,10 @@
 //       );
 //     `);
 
+//     await pool.query(`
+//     ALTER TABLE products ADD COLUMN IF NOT EXISTS size_prices TEXT;
+//   `).catch(() => {});
+
 //     console.log("✅ PostgreSQL tables verified/created");
 //   }
 
@@ -2248,9 +2836,11 @@
 
 //   app.post("/api/admin/login", (req: Request, res: Response) => {
 //     const { username, password } = req.body;
+//     // const adminUser = process.env.ADMIN_USERNAME || "aabidcf15";
+//     // const adminPass = process.env.ADMIN_PASSWORD || "cricfacebusiness@15";
 
-//     const adminUser = process.env.ADMIN_USERNAME || "admin";
-//     const adminPass = process.env.ADMIN_PASSWORD || "password123";
+//     const adminUser = "aabidcf15";
+//     const adminPass = "cricfacebusiness@15";
 
 //     if (username === adminUser && password === adminPass) {
 //       const token = jwt.sign(
@@ -2260,19 +2850,13 @@
 //       );
 //       return res.json({ token });
 //     }
-
 //     res.status(401).json({ message: "Invalid credentials" });
 //   });
 
-//   const authenticateToken = (
-//     req: Request,
-//     res: Response,
-//     next: NextFunction
-//   ) => {
+//   const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
 //     const authHeader = req.headers["authorization"];
 //     const token = authHeader && authHeader.split(" ")[1];
 //     if (!token) return res.sendStatus(401);
-
 //     jwt.verify(token, process.env.JWT_SECRET || "secret", (err) => {
 //       if (err) return res.sendStatus(403);
 //       next();
@@ -2281,12 +2865,10 @@
 
 //   // ---------------- GET ALL ----------------
 
-//   app.get("/api/products", async (req: Request, res: Response) => {
+//   app.get("/api/products", async (_req: Request, res: Response) => {
 //     try {
 //       if (isProduction) {
-//         const result = await pool.query(
-//           "SELECT * FROM products ORDER BY created_at DESC"
-//         );
+//         const result = await pool.query("SELECT * FROM products ORDER BY created_at DESC");
 //         return res.json(
 //           result.rows.map((p: any) => ({
 //             ...p,
@@ -2295,9 +2877,7 @@
 //           }))
 //         );
 //       } else {
-//         const products = db
-//           .prepare("SELECT * FROM products ORDER BY created_at DESC")
-//           .all();
+//         const products = db.prepare("SELECT * FROM products ORDER BY created_at DESC").all();
 //         return res.json(
 //           products.map((p: any) => ({
 //             ...p,
@@ -2317,31 +2897,21 @@
 //   app.get("/api/products/:id", async (req: Request, res: Response) => {
 //     try {
 //       if (isProduction) {
-//         const result = await pool.query(
-//           "SELECT * FROM products WHERE id = $1",
-//           [req.params.id]
-//         );
-
-//         if (result.rows.length === 0)
-//           return res.status(404).json({ message: "Not found" });
-
-//         const product = result.rows[0];
+//         const result = await pool.query("SELECT * FROM products WHERE id = $1", [req.params.id]);
+//         if (result.rows.length === 0) return res.status(404).json({ message: "Not found" });
+//         const p = result.rows[0];
 //         return res.json({
-//           ...product,
-//           images: product.images ? JSON.parse(product.images) : [],
-//           specifications: product.specifications ? JSON.parse(product.specifications) : {},
+//           ...p,
+//           images: p.images ? JSON.parse(p.images) : [],
+//           specifications: p.specifications ? JSON.parse(p.specifications) : {},
 //         });
 //       } else {
-//         const product = db
-//           .prepare("SELECT * FROM products WHERE id = ?")
-//           .get(req.params.id);
-
-//         if (!product) return res.status(404).json({ message: "Not found" });
-
+//         const p = db.prepare("SELECT * FROM products WHERE id = ?").get(req.params.id);
+//         if (!p) return res.status(404).json({ message: "Not found" });
 //         return res.json({
-//           ...product,
-//           images: product.images ? JSON.parse(product.images) : [],
-//           specifications: product.specifications ? JSON.parse(product.specifications) : {},
+//           ...p,
+//           images: p.images ? JSON.parse(p.images) : [],
+//           specifications: p.specifications ? JSON.parse(p.specifications) : {},
 //         });
 //       }
 //     } catch (error) {
@@ -2358,73 +2928,47 @@
 //     upload.fields([{ name: "images" }, { name: "video", maxCount: 1 }]),
 //     async (req: any, res: Response) => {
 //       try {
-//         const imageFiles: Express.Multer.File[] = req.files?.images || [];
-//         const videoFile: Express.Multer.File | undefined = req.files?.video?.[0];
+//         const imageFiles: any[] = req.files?.images || [];
+//         const videoFile: any = req.files?.video?.[0];
 
-//         const imagePaths = imageFiles.map((file) => getFileUrl(file, "image"));
-//         const videoPath = videoFile ? getFileUrl(videoFile, "video") : null;
+//         const imagePaths = await Promise.all(
+//           imageFiles.map((f) => getFileUrl(f, "image"))
+//         );
+//         const videoPath = videoFile ? await getFileUrl(videoFile, "video") : null;
 
 //         if (isProduction) {
 //           const result = await pool.query(
 //             `INSERT INTO products
-//             (name, original_price_inr, price_inr,
-//              original_price_usd, price_usd,
-//              original_price_eur, price_eur,
-//              grade, willow_type, weight, style,
-//              description, images, specifications,
-//              featured, video)
-//              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+//              (name, original_price_inr, price_inr, original_price_usd, price_usd,
+//               original_price_eur, price_eur, grade, willow_type, weight, style,
+//               description, images, specifications, featured, video,size_prices)
+//              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
 //              RETURNING id`,
 //             [
-//               req.body.name,
-//               req.body.original_price_inr || null,
-//               req.body.price_inr,
-//               req.body.original_price_usd || null,
-//               req.body.price_usd,
-//               req.body.original_price_eur || null,
-//               req.body.price_eur,
-//               req.body.grade,
-//               req.body.willow_type,
-//               req.body.weight,
-//               req.body.style,
-//               req.body.description,
-//               JSON.stringify(imagePaths),
-//               req.body.specifications,
-//               req.body.featured === "1" ? 1 : 0,
-//               videoPath,
+//               req.body.name, req.body.original_price_inr || null, req.body.price_inr,
+//               req.body.original_price_usd || null, req.body.price_usd,
+//               req.body.original_price_eur || null, req.body.price_eur,
+//               req.body.grade, req.body.willow_type, req.body.weight, req.body.style,
+//               req.body.description, JSON.stringify(imagePaths), req.body.specifications,
+//               req.body.featured === "1" ? 1 : 0, videoPath,req.body.size_prices || '[]'
 //             ]
 //           );
 //           return res.json({ id: result.rows[0].id });
 //         } else {
-//           const result = db
-//             .prepare(
-//               `INSERT INTO products
-//               (name, original_price_inr, price_inr,
-//                original_price_usd, price_usd,
-//                original_price_eur, price_eur,
-//                grade, willow_type, weight, style,
-//                description, images, specifications,
-//                featured, video)
-//                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-//             )
-//             .run(
-//               req.body.name,
-//               req.body.original_price_inr || null,
-//               req.body.price_inr,
-//               req.body.original_price_usd || null,
-//               req.body.price_usd,
-//               req.body.original_price_eur || null,
-//               req.body.price_eur,
-//               req.body.grade,
-//               req.body.willow_type,
-//               req.body.weight,
-//               req.body.style,
-//               req.body.description,
-//               JSON.stringify(imagePaths),
-//               req.body.specifications,
-//               req.body.featured === "1" ? 1 : 0,
-//               videoPath
-//             );
+//           const result = db.prepare(
+//             `INSERT INTO products
+//              (name, original_price_inr, price_inr, original_price_usd, price_usd,
+//               original_price_eur, price_eur, grade, willow_type, weight, style,
+//               description, images, specifications, featured, video,size_prices)
+//              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+//           ).run(
+//             req.body.name, req.body.original_price_inr || null, req.body.price_inr,
+//             req.body.original_price_usd || null, req.body.price_usd,
+//             req.body.original_price_eur || null, req.body.price_eur,
+//             req.body.grade, req.body.willow_type, req.body.weight, req.body.style,
+//             req.body.description, JSON.stringify(imagePaths), req.body.specifications,
+//             req.body.featured === "1" ? 1 : 0, videoPath, req.body.size_prices || '[]'
+//           );
 //           return res.json({ id: result.lastInsertRowid });
 //         }
 //       } catch (error) {
@@ -2433,6 +2977,166 @@
 //       }
 //     }
 //   );
+
+
+//   // POST /api/orders/create — creates Razorpay order + saves to DB
+//   app.post("/api/orders/create", async (req: Request, res: Response) => {
+//     try {
+//       const {
+//         product_id, product_name,
+//         customer_name, customer_phone, customer_email,
+//         delivery_address, customization,
+//         base_price_inr, addon_price_inr, total_price_inr,
+//       } = req.body;
+
+//       // Create Razorpay order via REST API (no SDK needed)
+//       const keyId = process.env.RAZORPAY_KEY_ID!;
+//       const keySecret = process.env.RAZORPAY_KEY_SECRET!;
+//       const auth = Buffer.from(`${keyId}:${keySecret}`).toString("base64");
+
+//       const rzpRes = await fetch("https://api.razorpay.com/v1/orders", {
+//         method: "POST",
+//         headers: {
+//           "Content-Type": "application/json",
+//           Authorization: `Basic ${auth}`,
+//         },
+//         body: JSON.stringify({
+//           amount: total_price_inr * 100, // paise
+//           currency: "INR",
+//           receipt: `order_${Date.now()}`,
+//         }),
+//       });
+
+//       const rzpOrder = await rzpRes.json();
+
+//       if (!rzpOrder.id) {
+//         return res.status(500).json({ message: "Failed to create Razorpay order", detail: rzpOrder });
+//       }
+
+//       // Save order to DB
+//       let orderId: number;
+
+//       if (isProduction) {
+//         const result = await pool.query(
+//           `INSERT INTO orders
+//           (product_id, product_name, customer_name, customer_phone, customer_email,
+//             delivery_address, customization, base_price_inr, addon_price_inr,
+//             total_price_inr, razorpay_order_id, payment_status)
+//           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'pending')
+//           RETURNING id`,
+//           [
+//             product_id, product_name, customer_name, customer_phone,
+//             customer_email || null, delivery_address,
+//             JSON.stringify(customization), base_price_inr, addon_price_inr,
+//             total_price_inr, rzpOrder.id,
+//           ]
+//         );
+//         orderId = result.rows[0].id;
+//       } else {
+//         const result = db.prepare(
+//           `INSERT INTO orders
+//           (product_id, product_name, customer_name, customer_phone, customer_email,
+//             delivery_address, customization, base_price_inr, addon_price_inr,
+//             total_price_inr, razorpay_order_id, payment_status)
+//           VALUES (?,?,?,?,?,?,?,?,?,?,'pending')`
+//         ).run(
+//           product_id, product_name, customer_name, customer_phone,
+//           customer_email || null, delivery_address,
+//           JSON.stringify(customization), base_price_inr, addon_price_inr,
+//           total_price_inr, rzpOrder.id
+//         );
+//         orderId = result.lastInsertRowid as number;
+//       }
+
+//       res.json({ id: orderId, razorpay_order_id: rzpOrder.id });
+//     } catch (error) {
+//       console.error(error);
+//       res.status(500).json({ message: "Order creation failed" });
+//     }
+//   });
+
+//   // POST /api/orders/verify — verifies Razorpay signature, marks order paid
+//   // also sends WhatsApp notification + email to customer
+//   app.post("/api/orders/verify", async (req: Request, res: Response) => {
+//     try {
+//       const { order_id, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+//       // Verify signature
+//       const keySecret = process.env.RAZORPAY_KEY_SECRET!;
+//       const expectedSignature = crypto
+//         .createHmac("sha256", keySecret)
+//         .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+//         .digest("hex");
+
+//       const isValid = expectedSignature === razorpay_signature;
+
+//       if (!isValid) {
+//         return res.status(400).json({ message: "Invalid payment signature" });
+//       }
+
+//       // Mark order as paid
+//       if (isProduction) {
+//         await pool.query(
+//           `UPDATE orders SET payment_status = 'paid', razorpay_payment_id = $1 WHERE id = $2`,
+//           [razorpay_payment_id, order_id]
+//         );
+//       } else {
+//         db.prepare(
+//           `UPDATE orders SET payment_status = 'paid', razorpay_payment_id = ? WHERE id = ?`
+//         ).run(razorpay_payment_id, order_id);
+//       }
+
+//       // Fetch order details for notifications
+//       let order: any;
+//       if (isProduction) {
+//         const result = await pool.query("SELECT * FROM orders WHERE id = $1", [order_id]);
+//         order = result.rows[0];
+//       } else {
+//         order = db.prepare("SELECT * FROM orders WHERE id = ?").get(order_id);
+//       }
+
+//       // Send WhatsApp notification to admin
+//       // (Opens a wa.me link — since this is server-side we just log it)
+//       // For proper WhatsApp Business API integration, add that here
+//       const customization = typeof order.customization === "string"
+//         ? JSON.parse(order.customization)
+//         : order.customization;
+
+//       console.log(`
+//   🎉 NEW ORDER PAID!
+//   Product: ${order.product_name}
+//   Customer: ${order.customer_name} | ${order.customer_phone}
+//   Address: ${order.delivery_address}
+//   Size: ${customization.size} | Weight: ${customization.weight}
+//   Handle: ${customization.handle_shape} | Profile: ${customization.profile}
+//   Laser: ${customization.laser_engraving || "None"}
+//   Threading: ${customization.threading ? "Yes" : "No"} | Extra Grip: ${customization.extra_grip ? "Yes" : "No"}
+//   Total: ₹${order.total_price_inr}
+//   Payment ID: ${razorpay_payment_id}
+//       `);
+
+//       res.json({ message: "Payment verified", status: "paid" });
+//     } catch (error) {
+//       console.error(error);
+//       res.status(500).json({ message: "Verification failed" });
+//     }
+//   });
+
+//   // GET /api/orders — admin only
+//   app.get("/api/orders", authenticateToken, async (req: Request, res: Response) => {
+//     try {
+//       if (isProduction) {
+//         const result = await pool.query("SELECT * FROM orders ORDER BY created_at DESC");
+//         return res.json(result.rows);
+//       } else {
+//         return res.json(db.prepare("SELECT * FROM orders ORDER BY created_at DESC").all());
+//       }
+//     } catch (error) {
+//       console.error(error);
+//       res.status(500).json({ message: "Server error" });
+//     }
+//   });
+  
 
 //   // ---------------- DELETE ----------------
 
@@ -2463,115 +3167,65 @@
 //     async (req: any, res: Response) => {
 //       try {
 //         const id = req.params.id;
-//         let existingProduct: any;
+//         let existing: any;
 
 //         if (isProduction) {
-//           const result = await pool.query(
-//             "SELECT * FROM products WHERE id = $1",
-//             [id]
-//           );
-//           if (result.rows.length === 0)
-//             return res.status(404).json({ message: "Product not found" });
-//           existingProduct = result.rows[0];
+//           const result = await pool.query("SELECT * FROM products WHERE id = $1", [id]);
+//           if (result.rows.length === 0) return res.status(404).json({ message: "Not found" });
+//           existing = result.rows[0];
 //         } else {
-//           existingProduct = db
-//             .prepare("SELECT * FROM products WHERE id = ?")
-//             .get(id);
-//           if (!existingProduct)
-//             return res.status(404).json({ message: "Product not found" });
+//           existing = db.prepare("SELECT * FROM products WHERE id = ?").get(id);
+//           if (!existing) return res.status(404).json({ message: "Not found" });
 //         }
 
-//         const imageFiles: Express.Multer.File[] = req.files?.images || [];
-//         const videoFile: Express.Multer.File | undefined = req.files?.video?.[0];
+//         const imageFiles: any[] = req.files?.images || [];
+//         const videoFile: any = req.files?.video?.[0];
 
-//         // If new files uploaded use them, otherwise keep existing URLs from DB
 //         const imagePaths =
 //           imageFiles.length > 0
-//             ? imageFiles.map((file) => getFileUrl(file, "image"))
-//             : JSON.parse(existingProduct.images || "[]");
+//             ? await Promise.all(imageFiles.map((f) => getFileUrl(f, "image")))
+//             : JSON.parse(existing.images || "[]");
 
 //         const videoPath = videoFile
-//           ? getFileUrl(videoFile, "video")
-//           : existingProduct.video;
+//           ? await getFileUrl(videoFile, "video")
+//           : existing.video;
 
 //         if (isProduction) {
 //           await pool.query(
 //             `UPDATE products SET
-//               name = $1,
-//               original_price_inr = $2,
-//               price_inr = $3,
-//               original_price_usd = $4,
-//               price_usd = $5,
-//               original_price_eur = $6,
-//               price_eur = $7,
-//               grade = $8,
-//               willow_type = $9,
-//               weight = $10,
-//               style = $11,
-//               description = $12,
-//               images = $13,
-//               specifications = $14,
-//               featured = $15,
-//               video = $16
-//              WHERE id = $17`,
+//               name=$1, original_price_inr=$2, price_inr=$3,
+//               original_price_usd=$4, price_usd=$5,
+//               original_price_eur=$6, price_eur=$7,
+//               grade=$8, willow_type=$9, weight=$10,
+//               style=$11, description=$12, images=$13,
+//               specifications=$14, featured=$15, video=$16, size_prices = $17
+//              WHERE id=$18`,
 //             [
-//               req.body.name,
-//               req.body.original_price_inr || null,
-//               req.body.price_inr,
-//               req.body.original_price_usd || null,
-//               req.body.price_usd,
-//               req.body.original_price_eur || null,
-//               req.body.price_eur,
-//               req.body.grade,
-//               req.body.willow_type,
-//               req.body.weight,
-//               req.body.style,
-//               req.body.description,
-//               JSON.stringify(imagePaths),
-//               req.body.specifications,
-//               req.body.featured === "1" ? 1 : 0,
-//               videoPath,
-//               id,
+//               req.body.name, req.body.original_price_inr || null, req.body.price_inr,
+//               req.body.original_price_usd || null, req.body.price_usd,
+//               req.body.original_price_eur || null, req.body.price_eur,
+//               req.body.grade, req.body.willow_type, req.body.weight, req.body.style,
+//               req.body.description, JSON.stringify(imagePaths), req.body.specifications,
+//               req.body.featured === "1" ? 1 : 0, videoPath,req.body.size_prices || '[]', id,
 //             ]
 //           );
 //         } else {
 //           db.prepare(`
 //             UPDATE products SET
-//               name = ?,
-//               original_price_inr = ?,
-//               price_inr = ?,
-//               original_price_usd = ?,
-//               price_usd = ?,
-//               original_price_eur = ?,
-//               price_eur = ?,
-//               grade = ?,
-//               willow_type = ?,
-//               weight = ?,
-//               style = ?,
-//               description = ?,
-//               images = ?,
-//               specifications = ?,
-//               featured = ?,
-//               video = ?
-//              WHERE id = ?
+//               name=?, original_price_inr=?, price_inr=?,
+//               original_price_usd=?, price_usd=?,
+//               original_price_eur=?, price_eur=?,
+//               grade=?, willow_type=?, weight=?,
+//               style=?, description=?, images=?,
+//               specifications=?, featured=?, video=?
+//              WHERE id=?
 //           `).run(
-//             req.body.name,
-//             req.body.original_price_inr || null,
-//             req.body.price_inr,
-//             req.body.original_price_usd || null,
-//             req.body.price_usd,
-//             req.body.original_price_eur || null,
-//             req.body.price_eur,
-//             req.body.grade,
-//             req.body.willow_type,
-//             req.body.weight,
-//             req.body.style,
-//             req.body.description,
-//             JSON.stringify(imagePaths),
-//             req.body.specifications,
-//             req.body.featured === "1" ? 1 : 0,
-//             videoPath,
-//             id
+//             req.body.name, req.body.original_price_inr || null, req.body.price_inr,
+//             req.body.original_price_usd || null, req.body.price_usd,
+//             req.body.original_price_eur || null, req.body.price_eur,
+//             req.body.grade, req.body.willow_type, req.body.weight, req.body.style,
+//             req.body.description, JSON.stringify(imagePaths), req.body.specifications,
+//             req.body.featured === "1" ? 1 : 0, videoPath, id
 //           );
 //         }
 
@@ -2590,14 +3244,60 @@
 //       const { name, contact, email, product_name, message } = req.body;
 //       if (isProduction) {
 //         await pool.query(
-//           `INSERT INTO inquiries (name, contact, email, product_name, message)
-//            VALUES ($1, $2, $3, $4, $5)`,
+//           `INSERT INTO inquiries (name, contact, email, product_name, message) VALUES ($1,$2,$3,$4,$5)`,
 //           [name, contact, email || null, product_name || null, message]
 //         );
+//         await pool.query(`
+//     CREATE TABLE IF NOT EXISTS orders (
+//       id SERIAL PRIMARY KEY,
+//       product_id INTEGER,
+//       product_name TEXT,
+//       customer_name TEXT NOT NULL,
+//       customer_phone TEXT NOT NULL,
+//       customer_email TEXT,
+//       delivery_address TEXT NOT NULL,
+//       customization TEXT,
+//       base_price_inr REAL NOT NULL,
+//       addon_price_inr REAL DEFAULT 0,
+//       total_price_inr REAL NOT NULL,
+//       razorpay_order_id TEXT,
+//       razorpay_payment_id TEXT,
+//       payment_status TEXT DEFAULT 'pending',
+//       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+//       advance_paid REAL DEFAULT 0,
+//       pending_amount REAL DEFAULT 0,
+//       payment_type TEXT DEFAULT 'full',
+//       fully_paid BOOLEAN DEFAULT FALSE
+//     );
+//   `);
+
+// // And for SQLite dev in your db.exec block:
+//     db.exec(`
+//       CREATE TABLE IF NOT EXISTS orders (
+//         id INTEGER PRIMARY KEY AUTOINCREMENT,
+//         product_id INTEGER,
+//         product_name TEXT,
+//         customer_name TEXT NOT NULL,
+//         customer_phone TEXT NOT NULL,
+//         customer_email TEXT,
+//         delivery_address TEXT NOT NULL,
+//         customization TEXT,
+//         base_price_inr REAL NOT NULL,
+//         addon_price_inr REAL DEFAULT 0,
+//         total_price_inr REAL NOT NULL,
+//         razorpay_order_id TEXT,
+//         razorpay_payment_id TEXT,
+//         payment_status TEXT DEFAULT 'pending',
+//         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+//         advance_paid REAL DEFAULT 0,
+//         pending_amount REAL DEFAULT 0,
+//         payment_type TEXT DEFAULT 'full',
+//         fully_paid BOOLEAN DEFAULT FALSE
+//       )
+//     `);
 //       } else {
 //         db.prepare(
-//           `INSERT INTO inquiries (name, contact, email, product_name, message)
-//            VALUES (?, ?, ?, ?, ?)`
+//           `INSERT INTO inquiries (name, contact, email, product_name, message) VALUES (?,?,?,?,?)`
 //         ).run(name, contact, email || null, product_name || null, message);
 //       }
 //       res.json({ message: "Inquiry received" });
@@ -2607,15 +3307,13 @@
 //     }
 //   });
 
-//   app.get("/api/inquiries", authenticateToken, async (req: Request, res: Response) => {
+//   app.get("/api/inquiries", authenticateToken, async (_req: Request, res: Response) => {
 //     try {
 //       if (isProduction) {
 //         const result = await pool.query("SELECT * FROM inquiries ORDER BY created_at DESC");
 //         return res.json(result.rows);
 //       } else {
-//         return res.json(
-//           db.prepare("SELECT * FROM inquiries ORDER BY created_at DESC").all()
-//         );
+//         return res.json(db.prepare("SELECT * FROM inquiries ORDER BY created_at DESC").all());
 //       }
 //     } catch (error) {
 //       console.error(error);
@@ -2634,7 +3332,75 @@
 //   } else {
 //     const clientDistPath = path.join(__dirname, "../dist");
 //     app.use(express.static(clientDistPath));
-//     app.get("*", (req, res) => {
+//     app.get("*", (_req, res) => {
+//       res.sendFile(path.join(clientDistPath, "index.html"));
+//     });
+//   }
+
+// //   // Temporary routes
+
+// //   app.get("/api/export-backup", async (req, res) => {
+// //   try {
+// //     const products = await pool.query("SELECT * FROM products ORDER BY id ASC");
+// //     const inquiries = await pool.query("SELECT * FROM inquiries ORDER BY id ASC");
+// //     res.json({
+// //       products: products.rows,
+// //       inquiries: inquiries.rows,
+// //     });
+// //   } catch (error) {
+// //     console.error(error);
+// //     res.status(500).json({ message: "Export failed" });
+// //   }
+// // });
+
+
+// //   app.post("/api/import-backup", async (req, res) => {
+// //   try {
+// //     const { products, inquiries } = req.body;
+
+// //     for (const p of products) {
+// //       await pool.query(
+// //         `INSERT INTO products
+// //          (name, original_price_inr, price_inr, original_price_usd, price_usd,
+// //           original_price_eur, price_eur, grade, willow_type, weight, style,
+// //           description, images, specifications, featured, video, created_at)
+// //          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+// //          ON CONFLICT DO NOTHING`,
+// //         [
+// //           p.name, p.original_price_inr, p.price_inr,
+// //           p.original_price_usd, p.price_usd,
+// //           p.original_price_eur, p.price_eur,
+// //           p.grade, p.willow_type, p.weight, p.style,
+// //           p.description, p.images, p.specifications,
+// //           p.featured, p.video, p.created_at,
+// //         ]
+// //       );
+// //     }
+
+// //     for (const i of inquiries) {
+// //       await pool.query(
+// //         `INSERT INTO inquiries
+// //          (name, contact, email, product_name, message, created_at)
+// //          VALUES ($1,$2,$3,$4,$5,$6)
+// //          ON CONFLICT DO NOTHING`,
+// //         [i.name, i.contact, i.email, i.product_name, i.message, i.created_at]
+// //       );
+// //     }
+
+// //     res.json({ message: `✅ Imported ${products.length} products and ${inquiries.length} inquiries` });
+// //   } catch (error) {
+// //     console.error(error);
+// //     res.status(500).json({ message: "Import failed" });
+// //   }
+// // });
+
+
+//   if (!isProduction) {
+//     // vite dev server
+//   } else {
+//     const clientDistPath = path.join(__dirname, "../dist"); // defined here
+//     app.use(express.static(clientDistPath));
+//     app.get("*", (req, res) => {  // catch-all last
 //       res.sendFile(path.join(clientDistPath, "index.html"));
 //     });
 //   }
@@ -2645,7 +3411,6 @@
 // }
 
 // startServer();
-
 
 import express, { Request, Response, NextFunction } from "express";
 import crypto from "crypto";
@@ -2699,6 +3464,7 @@ if (isProduction) {
       specifications TEXT,
       featured INTEGER DEFAULT 0,
       video TEXT,
+      size_prices TEXT,
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
@@ -2714,6 +3480,31 @@ if (isProduction) {
       created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )
   `);
+
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS orders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      product_id INTEGER,
+      product_name TEXT,
+      customer_name TEXT NOT NULL,
+      customer_phone TEXT NOT NULL,
+      customer_email TEXT,
+      delivery_address TEXT NOT NULL,
+      pin_code TEXT,
+      customization TEXT,
+      base_price_inr REAL NOT NULL,
+      addon_price_inr REAL DEFAULT 0,
+      total_price_inr REAL NOT NULL,
+      payment_type TEXT DEFAULT 'full',
+      advance_paid REAL DEFAULT 0,
+      pending_amount REAL DEFAULT 0,
+      fully_paid BOOLEAN DEFAULT FALSE,
+      razorpay_order_id TEXT,
+      razorpay_payment_id TEXT,
+      payment_status TEXT DEFAULT 'pending',
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
 }
 
 // ─── Cloudinary config ────────────────────────────────────────────────────────
@@ -2723,7 +3514,7 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// ─── Upload a buffer to Cloudinary, returns secure URL ───────────────────────
+// ─── Upload a buffer to Cloudinary ───────────────────────────────────────────
 function uploadBufferToCloudinary(
   buffer: Buffer,
   resourceType: "image" | "video"
@@ -2740,11 +3531,10 @@ function uploadBufferToCloudinary(
   });
 }
 
-// ─── Multer — memory storage in prod, disk in dev ────────────────────────────
+// ─── Multer ───────────────────────────────────────────────────────────────────
 let upload: any;
 
 if (isProduction) {
-  // Hold files in memory so we can stream to Cloudinary
   upload = multer({
     storage: multer.memoryStorage(),
     limits: { fileSize: 200 * 1024 * 1024 },
@@ -2767,15 +3557,20 @@ if (isProduction) {
   });
 }
 
-// ─── Resolve file to URL ──────────────────────────────────────────────────────
 async function getFileUrl(file: any, type: "image" | "video"): Promise<string> {
   if (isProduction) {
-    // file.buffer is available because we used memoryStorage
     return await uploadBufferToCloudinary(file.buffer, type);
   }
   return type === "video"
     ? `/uploads/videos/${file.filename}`
     : `/uploads/images/${file.filename}`;
+}
+
+// ─── Advance amount helper ────────────────────────────────────────────────────
+function getAdvanceAmount(total: number): number {
+  if (total < 10000) return 500;
+  if (total < 15000) return 1000;
+  return 1500;
 }
 
 async function startServer() {
@@ -2788,7 +3583,7 @@ async function startServer() {
     app.use("/uploads", express.static("uploads"));
   }
 
-  // ─── AUTO CREATE TABLES IN POSTGRES ─────────────────────────────────────────
+  // ─── AUTO CREATE TABLES IN POSTGRES ──────────────────────────────────────────
   if (isProduction) {
     await pool.query(`
       CREATE TABLE IF NOT EXISTS products (
@@ -2809,6 +3604,7 @@ async function startServer() {
         specifications TEXT,
         featured INTEGER DEFAULT 0,
         video TEXT,
+        size_prices TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
     `);
@@ -2826,18 +3622,48 @@ async function startServer() {
     `);
 
     await pool.query(`
-    ALTER TABLE products ADD COLUMN IF NOT EXISTS size_prices TEXT;
-  `).catch(() => {});
+      CREATE TABLE IF NOT EXISTS orders (
+        id SERIAL PRIMARY KEY,
+        product_id INTEGER,
+        product_name TEXT,
+        customer_name TEXT NOT NULL,
+        customer_phone TEXT NOT NULL,
+        customer_email TEXT,
+        delivery_address TEXT NOT NULL,
+        pin_code TEXT,
+        customization TEXT,
+        base_price_inr REAL NOT NULL,
+        addon_price_inr REAL DEFAULT 0,
+        total_price_inr REAL NOT NULL,
+        payment_type TEXT DEFAULT 'full',
+        advance_paid REAL DEFAULT 0,
+        pending_amount REAL DEFAULT 0,
+        fully_paid BOOLEAN DEFAULT FALSE,
+        razorpay_order_id TEXT,
+        razorpay_payment_id TEXT,
+        payment_status TEXT DEFAULT 'pending',
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+
+    // Safe migrations for existing deployments
+    await pool.query(`ALTER TABLE products ADD COLUMN IF NOT EXISTS size_prices TEXT;`).catch(() => {});
+    await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pin_code TEXT;`).catch(() => {});
+    await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS payment_type TEXT DEFAULT 'full';`).catch(() => {});
+    await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS advance_paid REAL DEFAULT 0;`).catch(() => {});
+    await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS pending_amount REAL DEFAULT 0;`).catch(() => {});
+    await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS fully_paid BOOLEAN DEFAULT FALSE;`).catch(() => {});
 
     console.log("✅ PostgreSQL tables verified/created");
   }
 
-  // ---------------- AUTH ----------------
-
+  // ─── AUTH ─────────────────────────────────────────────────────────────────
   app.post("/api/admin/login", (req: Request, res: Response) => {
     const { username, password } = req.body;
-    const adminUser = process.env.ADMIN_USERNAME || "admin";
-    const adminPass = process.env.ADMIN_PASSWORD || "password123";
+
+    // ✏️  Change these credentials for the client
+    const adminUser = "aabidcf15";
+    const adminPass = "cricfacebusiness@15";
 
     if (username === adminUser && password === adminPass) {
       const token = jwt.sign(
@@ -2860,8 +3686,7 @@ async function startServer() {
     });
   };
 
-  // ---------------- GET ALL ----------------
-
+  // ─── GET ALL PRODUCTS ─────────────────────────────────────────────────────
   app.get("/api/products", async (_req: Request, res: Response) => {
     try {
       if (isProduction) {
@@ -2889,8 +3714,7 @@ async function startServer() {
     }
   });
 
-  // ---------------- GET ONE ----------------
-
+  // ─── GET ONE PRODUCT ──────────────────────────────────────────────────────
   app.get("/api/products/:id", async (req: Request, res: Response) => {
     try {
       if (isProduction) {
@@ -2917,8 +3741,7 @@ async function startServer() {
     }
   });
 
-  // ---------------- INSERT ----------------
-
+  // ─── INSERT PRODUCT ───────────────────────────────────────────────────────
   app.post(
     "/api/products",
     authenticateToken,
@@ -2928,9 +3751,7 @@ async function startServer() {
         const imageFiles: any[] = req.files?.images || [];
         const videoFile: any = req.files?.video?.[0];
 
-        const imagePaths = await Promise.all(
-          imageFiles.map((f) => getFileUrl(f, "image"))
-        );
+        const imagePaths = await Promise.all(imageFiles.map((f) => getFileUrl(f, "image")));
         const videoPath = videoFile ? await getFileUrl(videoFile, "video") : null;
 
         if (isProduction) {
@@ -2938,7 +3759,7 @@ async function startServer() {
             `INSERT INTO products
              (name, original_price_inr, price_inr, original_price_usd, price_usd,
               original_price_eur, price_eur, grade, willow_type, weight, style,
-              description, images, specifications, featured, video,size_prices)
+              description, images, specifications, featured, video, size_prices)
              VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
              RETURNING id`,
             [
@@ -2947,7 +3768,7 @@ async function startServer() {
               req.body.original_price_eur || null, req.body.price_eur,
               req.body.grade, req.body.willow_type, req.body.weight, req.body.style,
               req.body.description, JSON.stringify(imagePaths), req.body.specifications,
-              req.body.featured === "1" ? 1 : 0, videoPath,req.body.size_prices || '[]'
+              req.body.featured === "1" ? 1 : 0, videoPath, req.body.size_prices || "[]",
             ]
           );
           return res.json({ id: result.rows[0].id });
@@ -2956,7 +3777,7 @@ async function startServer() {
             `INSERT INTO products
              (name, original_price_inr, price_inr, original_price_usd, price_usd,
               original_price_eur, price_eur, grade, willow_type, weight, style,
-              description, images, specifications, featured, video,size_prices)
+              description, images, specifications, featured, video, size_prices)
              VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
           ).run(
             req.body.name, req.body.original_price_inr || null, req.body.price_inr,
@@ -2964,7 +3785,7 @@ async function startServer() {
             req.body.original_price_eur || null, req.body.price_eur,
             req.body.grade, req.body.willow_type, req.body.weight, req.body.style,
             req.body.description, JSON.stringify(imagePaths), req.body.specifications,
-            req.body.featured === "1" ? 1 : 0, videoPath, req.body.size_prices || '[]'
+            req.body.featured === "1" ? 1 : 0, videoPath, req.body.size_prices || "[]"
           );
           return res.json({ id: result.lastInsertRowid });
         }
@@ -2975,245 +3796,7 @@ async function startServer() {
     }
   );
 
-  // Temporary routes
-
-//   app.get("/api/export-backup", async (req, res) => {
-//   try {
-//     const products = await pool.query("SELECT * FROM products ORDER BY id ASC");
-//     const inquiries = await pool.query("SELECT * FROM inquiries ORDER BY id ASC");
-//     res.json({
-//       products: products.rows,
-//       inquiries: inquiries.rows,
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: "Export failed" });
-//   }
-// });
-
-
-//   app.post("/api/import-backup", async (req, res) => {
-//   try {
-//     const { products, inquiries } = req.body;
-
-//     for (const p of products) {
-//       await pool.query(
-//         `INSERT INTO products
-//          (name, original_price_inr, price_inr, original_price_usd, price_usd,
-//           original_price_eur, price_eur, grade, willow_type, weight, style,
-//           description, images, specifications, featured, video, created_at)
-//          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
-//          ON CONFLICT DO NOTHING`,
-//         [
-//           p.name, p.original_price_inr, p.price_inr,
-//           p.original_price_usd, p.price_usd,
-//           p.original_price_eur, p.price_eur,
-//           p.grade, p.willow_type, p.weight, p.style,
-//           p.description, p.images, p.specifications,
-//           p.featured, p.video, p.created_at,
-//         ]
-//       );
-//     }
-
-//     for (const i of inquiries) {
-//       await pool.query(
-//         `INSERT INTO inquiries
-//          (name, contact, email, product_name, message, created_at)
-//          VALUES ($1,$2,$3,$4,$5,$6)
-//          ON CONFLICT DO NOTHING`,
-//         [i.name, i.contact, i.email, i.product_name, i.message, i.created_at]
-//       );
-//     }
-
-//     res.json({ message: `✅ Imported ${products.length} products and ${inquiries.length} inquiries` });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: "Import failed" });
-//   }
-// });
-
-
-  // POST /api/orders/create — creates Razorpay order + saves to DB
-  app.post("/api/orders/create", async (req: Request, res: Response) => {
-    try {
-      const {
-        product_id, product_name,
-        customer_name, customer_phone, customer_email,
-        delivery_address, customization,
-        base_price_inr, addon_price_inr, total_price_inr,
-      } = req.body;
-
-      // Create Razorpay order via REST API (no SDK needed)
-      const keyId = process.env.RAZORPAY_KEY_ID!;
-      const keySecret = process.env.RAZORPAY_KEY_SECRET!;
-      const auth = Buffer.from(`${keyId}:${keySecret}`).toString("base64");
-
-      const rzpRes = await fetch("https://api.razorpay.com/v1/orders", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Basic ${auth}`,
-        },
-        body: JSON.stringify({
-          amount: total_price_inr * 100, // paise
-          currency: "INR",
-          receipt: `order_${Date.now()}`,
-        }),
-      });
-
-      const rzpOrder = await rzpRes.json();
-
-      if (!rzpOrder.id) {
-        return res.status(500).json({ message: "Failed to create Razorpay order", detail: rzpOrder });
-      }
-
-      // Save order to DB
-      let orderId: number;
-
-      if (isProduction) {
-        const result = await pool.query(
-          `INSERT INTO orders
-          (product_id, product_name, customer_name, customer_phone, customer_email,
-            delivery_address, customization, base_price_inr, addon_price_inr,
-            total_price_inr, razorpay_order_id, payment_status)
-          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'pending')
-          RETURNING id`,
-          [
-            product_id, product_name, customer_name, customer_phone,
-            customer_email || null, delivery_address,
-            JSON.stringify(customization), base_price_inr, addon_price_inr,
-            total_price_inr, rzpOrder.id,
-          ]
-        );
-        orderId = result.rows[0].id;
-      } else {
-        const result = db.prepare(
-          `INSERT INTO orders
-          (product_id, product_name, customer_name, customer_phone, customer_email,
-            delivery_address, customization, base_price_inr, addon_price_inr,
-            total_price_inr, razorpay_order_id, payment_status)
-          VALUES (?,?,?,?,?,?,?,?,?,?,'pending')`
-        ).run(
-          product_id, product_name, customer_name, customer_phone,
-          customer_email || null, delivery_address,
-          JSON.stringify(customization), base_price_inr, addon_price_inr,
-          total_price_inr, rzpOrder.id
-        );
-        orderId = result.lastInsertRowid as number;
-      }
-
-      res.json({ id: orderId, razorpay_order_id: rzpOrder.id });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Order creation failed" });
-    }
-  });
-
-  // POST /api/orders/verify — verifies Razorpay signature, marks order paid
-  // also sends WhatsApp notification + email to customer
-  app.post("/api/orders/verify", async (req: Request, res: Response) => {
-    try {
-      const { order_id, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
-
-      // Verify signature
-      const keySecret = process.env.RAZORPAY_KEY_SECRET!;
-      const expectedSignature = crypto
-        .createHmac("sha256", keySecret)
-        .update(`${razorpay_order_id}|${razorpay_payment_id}`)
-        .digest("hex");
-
-      const isValid = expectedSignature === razorpay_signature;
-
-      if (!isValid) {
-        return res.status(400).json({ message: "Invalid payment signature" });
-      }
-
-      // Mark order as paid
-      if (isProduction) {
-        await pool.query(
-          `UPDATE orders SET payment_status = 'paid', razorpay_payment_id = $1 WHERE id = $2`,
-          [razorpay_payment_id, order_id]
-        );
-      } else {
-        db.prepare(
-          `UPDATE orders SET payment_status = 'paid', razorpay_payment_id = ? WHERE id = ?`
-        ).run(razorpay_payment_id, order_id);
-      }
-
-      // Fetch order details for notifications
-      let order: any;
-      if (isProduction) {
-        const result = await pool.query("SELECT * FROM orders WHERE id = $1", [order_id]);
-        order = result.rows[0];
-      } else {
-        order = db.prepare("SELECT * FROM orders WHERE id = ?").get(order_id);
-      }
-
-      // Send WhatsApp notification to admin
-      // (Opens a wa.me link — since this is server-side we just log it)
-      // For proper WhatsApp Business API integration, add that here
-      const customization = typeof order.customization === "string"
-        ? JSON.parse(order.customization)
-        : order.customization;
-
-      console.log(`
-  🎉 NEW ORDER PAID!
-  Product: ${order.product_name}
-  Customer: ${order.customer_name} | ${order.customer_phone}
-  Address: ${order.delivery_address}
-  Size: ${customization.size} | Weight: ${customization.weight}
-  Handle: ${customization.handle_shape} | Profile: ${customization.profile}
-  Laser: ${customization.laser_engraving || "None"}
-  Threading: ${customization.threading ? "Yes" : "No"} | Extra Grip: ${customization.extra_grip ? "Yes" : "No"}
-  Total: ₹${order.total_price_inr}
-  Payment ID: ${razorpay_payment_id}
-      `);
-
-      res.json({ message: "Payment verified", status: "paid" });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Verification failed" });
-    }
-  });
-
-  // GET /api/orders — admin only
-  app.get("/api/orders", authenticateToken, async (req: Request, res: Response) => {
-    try {
-      if (isProduction) {
-        const result = await pool.query("SELECT * FROM orders ORDER BY created_at DESC");
-        return res.json(result.rows);
-      } else {
-        return res.json(db.prepare("SELECT * FROM orders ORDER BY created_at DESC").all());
-      }
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: "Server error" });
-    }
-  });
-  
-
-  // ---------------- DELETE ----------------
-
-  app.delete(
-    "/api/products/:id",
-    authenticateToken,
-    async (req: Request, res: Response) => {
-      try {
-        if (isProduction) {
-          await pool.query("DELETE FROM products WHERE id = $1", [req.params.id]);
-        } else {
-          db.prepare("DELETE FROM products WHERE id = ?").run(req.params.id);
-        }
-        res.json({ message: "Deleted successfully" });
-      } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: "Server error" });
-      }
-    }
-  );
-
-  // ---------------- UPDATE ----------------
-
+  // ─── UPDATE PRODUCT ───────────────────────────────────────────────────────
   app.put(
     "/api/products/:id",
     authenticateToken,
@@ -3240,9 +3823,7 @@ async function startServer() {
             ? await Promise.all(imageFiles.map((f) => getFileUrl(f, "image")))
             : JSON.parse(existing.images || "[]");
 
-        const videoPath = videoFile
-          ? await getFileUrl(videoFile, "video")
-          : existing.video;
+        const videoPath = videoFile ? await getFileUrl(videoFile, "video") : existing.video;
 
         if (isProduction) {
           await pool.query(
@@ -3252,7 +3833,7 @@ async function startServer() {
               original_price_eur=$6, price_eur=$7,
               grade=$8, willow_type=$9, weight=$10,
               style=$11, description=$12, images=$13,
-              specifications=$14, featured=$15, video=$16, size_prices = $17
+              specifications=$14, featured=$15, video=$16, size_prices=$17
              WHERE id=$18`,
             [
               req.body.name, req.body.original_price_inr || null, req.body.price_inr,
@@ -3260,7 +3841,7 @@ async function startServer() {
               req.body.original_price_eur || null, req.body.price_eur,
               req.body.grade, req.body.willow_type, req.body.weight, req.body.style,
               req.body.description, JSON.stringify(imagePaths), req.body.specifications,
-              req.body.featured === "1" ? 1 : 0, videoPath,req.body.size_prices || '[]', id,
+              req.body.featured === "1" ? 1 : 0, videoPath, req.body.size_prices || "[]", id,
             ]
           );
         } else {
@@ -3271,7 +3852,7 @@ async function startServer() {
               original_price_eur=?, price_eur=?,
               grade=?, willow_type=?, weight=?,
               style=?, description=?, images=?,
-              specifications=?, featured=?, video=?
+              specifications=?, featured=?, video=?, size_prices=?
              WHERE id=?
           `).run(
             req.body.name, req.body.original_price_inr || null, req.body.price_inr,
@@ -3279,7 +3860,7 @@ async function startServer() {
             req.body.original_price_eur || null, req.body.price_eur,
             req.body.grade, req.body.willow_type, req.body.weight, req.body.style,
             req.body.description, JSON.stringify(imagePaths), req.body.specifications,
-            req.body.featured === "1" ? 1 : 0, videoPath, id
+            req.body.featured === "1" ? 1 : 0, videoPath, req.body.size_prices || "[]", id
           );
         }
 
@@ -3291,8 +3872,22 @@ async function startServer() {
     }
   );
 
-  // ---------------- INQUIRIES ----------------
+  // ─── DELETE PRODUCT ───────────────────────────────────────────────────────
+  app.delete("/api/products/:id", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      if (isProduction) {
+        await pool.query("DELETE FROM products WHERE id = $1", [req.params.id]);
+      } else {
+        db.prepare("DELETE FROM products WHERE id = ?").run(req.params.id);
+      }
+      res.json({ message: "Deleted successfully" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
 
+  // ─── INQUIRIES ────────────────────────────────────────────────────────────
   app.post("/api/inquiries", async (req: Request, res: Response) => {
     try {
       const { name, contact, email, product_name, message } = req.body;
@@ -3301,46 +3896,6 @@ async function startServer() {
           `INSERT INTO inquiries (name, contact, email, product_name, message) VALUES ($1,$2,$3,$4,$5)`,
           [name, contact, email || null, product_name || null, message]
         );
-        await pool.query(`
-    CREATE TABLE IF NOT EXISTS orders (
-      id SERIAL PRIMARY KEY,
-      product_id INTEGER,
-      product_name TEXT,
-      customer_name TEXT NOT NULL,
-      customer_phone TEXT NOT NULL,
-      customer_email TEXT,
-      delivery_address TEXT NOT NULL,
-      customization TEXT,
-      base_price_inr REAL NOT NULL,
-      addon_price_inr REAL DEFAULT 0,
-      total_price_inr REAL NOT NULL,
-      razorpay_order_id TEXT,
-      razorpay_payment_id TEXT,
-      payment_status TEXT DEFAULT 'pending',
-      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-    );
-  `);
-
-// And for SQLite dev in your db.exec block:
-    db.exec(`
-      CREATE TABLE IF NOT EXISTS orders (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        product_id INTEGER,
-        product_name TEXT,
-        customer_name TEXT NOT NULL,
-        customer_phone TEXT NOT NULL,
-        customer_email TEXT,
-        delivery_address TEXT NOT NULL,
-        customization TEXT,
-        base_price_inr REAL NOT NULL,
-        addon_price_inr REAL DEFAULT 0,
-        total_price_inr REAL NOT NULL,
-        razorpay_order_id TEXT,
-        razorpay_payment_id TEXT,
-        payment_status TEXT DEFAULT 'pending',
-        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-      )
-    `);
       } else {
         db.prepare(
           `INSERT INTO inquiries (name, contact, email, product_name, message) VALUES (?,?,?,?,?)`
@@ -3367,8 +3922,190 @@ async function startServer() {
     }
   });
 
-  // ---------------- FRONTEND ----------------
+  // ─── ORDERS: CREATE ───────────────────────────────────────────────────────
+  app.post("/api/orders/create", async (req: Request, res: Response) => {
+    try {
+      const {
+        product_id, product_name,
+        customer_name, customer_phone, customer_email,
+        delivery_address, pin_code, customization,
+        base_price_inr, addon_price_inr, total_price_inr,
+        payment_type,
+      } = req.body;
 
+      const advance_paid = payment_type === "advance"
+        ? getAdvanceAmount(total_price_inr)
+        : total_price_inr;
+
+      const pending_amount = payment_type === "advance"
+        ? total_price_inr - advance_paid
+        : 0;
+
+      const amountToCharge = advance_paid; // either advance or full
+
+      // Create Razorpay order
+      const keyId = process.env.RAZORPAY_KEY_ID!;
+      const keySecret = process.env.RAZORPAY_KEY_SECRET!;
+      const auth = Buffer.from(`${keyId}:${keySecret}`).toString("base64");
+
+      const rzpRes = await fetch("https://api.razorpay.com/v1/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Basic ${auth}`,
+        },
+        body: JSON.stringify({
+          amount: Math.round(amountToCharge * 100),
+          currency: "INR",
+          receipt: `order_${Date.now()}`,
+        }),
+      });
+
+      const rzpOrder = await rzpRes.json();
+
+      if (!rzpOrder.id) {
+        return res.status(500).json({ message: "Failed to create Razorpay order", detail: rzpOrder });
+      }
+
+      let orderId: number;
+
+      if (isProduction) {
+        const result = await pool.query(
+          `INSERT INTO orders
+           (product_id, product_name, customer_name, customer_phone, customer_email,
+            delivery_address, pin_code, customization, base_price_inr, addon_price_inr,
+            total_price_inr, payment_type, advance_paid, pending_amount,
+            fully_paid, razorpay_order_id, payment_status)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,FALSE,$15,'pending')
+           RETURNING id`,
+          [
+            product_id, product_name, customer_name, customer_phone,
+            customer_email || null, delivery_address, pin_code || null,
+            JSON.stringify(customization), base_price_inr, addon_price_inr || 0,
+            total_price_inr, payment_type, advance_paid, pending_amount,
+            rzpOrder.id,
+          ]
+        );
+        orderId = result.rows[0].id;
+      } else {
+        const result = db.prepare(
+          `INSERT INTO orders
+           (product_id, product_name, customer_name, customer_phone, customer_email,
+            delivery_address, pin_code, customization, base_price_inr, addon_price_inr,
+            total_price_inr, payment_type, advance_paid, pending_amount,
+            fully_paid, razorpay_order_id, payment_status)
+           VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,0,?,'pending')`
+        ).run(
+          product_id, product_name, customer_name, customer_phone,
+          customer_email || null, delivery_address, pin_code || null,
+          JSON.stringify(customization), base_price_inr, addon_price_inr || 0,
+          total_price_inr, payment_type, advance_paid, pending_amount,
+          rzpOrder.id
+        );
+        orderId = result.lastInsertRowid as number;
+      }
+
+      res.json({ id: orderId, razorpay_order_id: rzpOrder.id });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Order creation failed" });
+    }
+  });
+
+  // ─── ORDERS: VERIFY PAYMENT ───────────────────────────────────────────────
+  app.post("/api/orders/verify", async (req: Request, res: Response) => {
+    try {
+      const { order_id, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+      const keySecret = process.env.RAZORPAY_KEY_SECRET!;
+      const expectedSignature = crypto
+        .createHmac("sha256", keySecret)
+        .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+        .digest("hex");
+
+      if (expectedSignature !== razorpay_signature) {
+        return res.status(400).json({ message: "Invalid payment signature" });
+      }
+
+      if (isProduction) {
+        await pool.query(
+          `UPDATE orders SET payment_status = 'paid', razorpay_payment_id = $1 WHERE id = $2`,
+          [razorpay_payment_id, order_id]
+        );
+      } else {
+        db.prepare(
+          `UPDATE orders SET payment_status = 'paid', razorpay_payment_id = ? WHERE id = ?`
+        ).run(razorpay_payment_id, order_id);
+      }
+
+      let order: any;
+      if (isProduction) {
+        const result = await pool.query("SELECT * FROM orders WHERE id = $1", [order_id]);
+        order = result.rows[0];
+      } else {
+        order = db.prepare("SELECT * FROM orders WHERE id = ?").get(order_id);
+      }
+
+      const customization = typeof order.customization === "string"
+        ? JSON.parse(order.customization)
+        : order.customization;
+
+      console.log(`
+🎉 NEW ORDER PAID!
+Product:    ${order.product_name}
+Customer:   ${order.customer_name} | ${order.customer_phone}
+Address:    ${order.delivery_address}, PIN: ${order.pin_code || "N/A"}
+Size:       ${customization.size} | Weight: ${customization.weight}
+Handle:     ${customization.handle_shape} | Profile: ${customization.profile}
+Laser:      ${customization.laser_engraving || "None"}
+Threading:  ${customization.threading ? "Yes" : "No"} | Extra Grip: ${customization.extra_grip ? "Yes" : "No"}
+Payment:    ${order.payment_type === "advance" ? `Advance ₹${order.advance_paid} paid, ₹${order.pending_amount} pending` : `Full ₹${order.total_price_inr}`}
+Payment ID: ${razorpay_payment_id}
+      `);
+
+      res.json({ message: "Payment verified", status: "paid" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Verification failed" });
+    }
+  });
+
+  // ─── ORDERS: MARK AS FULLY PAID ───────────────────────────────────────────
+  app.patch("/api/orders/:id/mark-paid", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      if (isProduction) {
+        await pool.query(
+          `UPDATE orders SET fully_paid = TRUE, pending_amount = 0 WHERE id = $1`,
+          [req.params.id]
+        );
+      } else {
+        db.prepare(
+          `UPDATE orders SET fully_paid = 1, pending_amount = 0 WHERE id = ?`
+        ).run(req.params.id);
+      }
+      res.json({ message: "Order marked as fully paid" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // ─── ORDERS: GET ALL (admin) ──────────────────────────────────────────────
+  app.get("/api/orders", authenticateToken, async (_req: Request, res: Response) => {
+    try {
+      if (isProduction) {
+        const result = await pool.query("SELECT * FROM orders ORDER BY created_at DESC");
+        return res.json(result.rows);
+      } else {
+        return res.json(db.prepare("SELECT * FROM orders ORDER BY created_at DESC").all());
+      }
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
+
+  // ─── FRONTEND ─────────────────────────────────────────────────────────────
   if (!isProduction) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -3379,74 +4116,6 @@ async function startServer() {
     const clientDistPath = path.join(__dirname, "../dist");
     app.use(express.static(clientDistPath));
     app.get("*", (_req, res) => {
-      res.sendFile(path.join(clientDistPath, "index.html"));
-    });
-  }
-
-//   // Temporary routes
-
-//   app.get("/api/export-backup", async (req, res) => {
-//   try {
-//     const products = await pool.query("SELECT * FROM products ORDER BY id ASC");
-//     const inquiries = await pool.query("SELECT * FROM inquiries ORDER BY id ASC");
-//     res.json({
-//       products: products.rows,
-//       inquiries: inquiries.rows,
-//     });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: "Export failed" });
-//   }
-// });
-
-
-//   app.post("/api/import-backup", async (req, res) => {
-//   try {
-//     const { products, inquiries } = req.body;
-
-//     for (const p of products) {
-//       await pool.query(
-//         `INSERT INTO products
-//          (name, original_price_inr, price_inr, original_price_usd, price_usd,
-//           original_price_eur, price_eur, grade, willow_type, weight, style,
-//           description, images, specifications, featured, video, created_at)
-//          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
-//          ON CONFLICT DO NOTHING`,
-//         [
-//           p.name, p.original_price_inr, p.price_inr,
-//           p.original_price_usd, p.price_usd,
-//           p.original_price_eur, p.price_eur,
-//           p.grade, p.willow_type, p.weight, p.style,
-//           p.description, p.images, p.specifications,
-//           p.featured, p.video, p.created_at,
-//         ]
-//       );
-//     }
-
-//     for (const i of inquiries) {
-//       await pool.query(
-//         `INSERT INTO inquiries
-//          (name, contact, email, product_name, message, created_at)
-//          VALUES ($1,$2,$3,$4,$5,$6)
-//          ON CONFLICT DO NOTHING`,
-//         [i.name, i.contact, i.email, i.product_name, i.message, i.created_at]
-//       );
-//     }
-
-//     res.json({ message: `✅ Imported ${products.length} products and ${inquiries.length} inquiries` });
-//   } catch (error) {
-//     console.error(error);
-//     res.status(500).json({ message: "Import failed" });
-//   }
-// });
-
-
-  if (!isProduction) {
-    // vite dev server
-  } else {
-    const clientDistPath = path.join(__dirname, "../dist"); // defined here
-    app.use(express.static(clientDistPath));
-    app.get("*", (req, res) => {  // catch-all last
       res.sendFile(path.join(clientDistPath, "index.html"));
     });
   }

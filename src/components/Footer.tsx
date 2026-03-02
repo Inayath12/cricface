@@ -125,7 +125,7 @@ const Footer = () => {
             </p>
 
             <div className="flex space-x-4">
-              <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-gold hover:text-black transition-all">
+              <a href="https://www.instagram.com/cricface_cf/" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-gold hover:text-black transition-all">
                 <Instagram size={18} />
               </a>
               <a href="#" className="w-10 h-10 rounded-full bg-white/5 flex items-center justify-center hover:bg-gold hover:text-black transition-all">
@@ -182,7 +182,7 @@ const Footer = () => {
               </li>
               <li className="flex items-center space-x-3">
                 <MapPin size={16} className="text-gold" />
-                <span>Srinagar, J&K</span>
+                <span>Qamarwari Chowk Srinagar, Jammu & Kashmir</span>
               </li>
             </ul>
           </div>
