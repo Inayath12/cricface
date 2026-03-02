@@ -1175,13 +1175,11 @@ import { ChevronLeft, MessageSquare, ShoppingBag, CheckCircle2, Loader2 } from "
 import { motion, AnimatePresence } from "framer-motion";
 
 // ─── Constants ────────────────────────────────────────────────────────────────
-const SIZES = ["Size 1", "Size 2", "Size 3", "Size 4", "Size 5", "Size 6", "Harrow", "Full Size"];
+const SIZES = [ "Size 3", "Size 4", "Size 5", "Size 6", "Harrow", "Full Size"];
 
 const WEIGHT_OPTIONS: Record<string, string[]> = {
   "Kashmir Willow": ["1150g–1200g", "1200g–1250g", "1250g–1300g"],
   "English Willow": ["1120g–1150g", "1150g–1180g", "1200g–1250g"],
-  "Size 1":         ["750g–800g", "800g–850g"],
-  "Size 2":         ["780g–830g", "830g–880g"],
   "Size 3":         ["800g–850g", "850g–900g"],
   "Size 4":         ["800g–850g", "850g–900g"],
   "Size 5":         ["850g–900g", "900g–950g", "950g–1000g"],
