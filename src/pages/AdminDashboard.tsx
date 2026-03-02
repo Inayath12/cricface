@@ -4240,11 +4240,485 @@
 
 // export default AdminDashboard;
 
+// 01-02-2026
+
+// import React, { useState, useEffect, useRef } from "react";
+// import { useNavigate } from "react-router-dom";
+// import { Plus, Trash2, Edit2, X, Upload, Video } from "lucide-react";
+// import { motion, AnimatePresence } from "framer-motion";
+// import { Product } from "../types";
+
+// interface ExtendedProduct extends Partial<Product> {
+//   imagesFiles?: File[];
+//   videoFile?: File | null;
+//   featured?: boolean;
+//   original_price_inr?: number;
+//   original_price_usd?: number;
+//   original_price_eur?: number;
+// }
+
+// const AdminDashboard = () => {
+//   const [products, setProducts] = useState<Product[]>([]);
+//   const [isModalOpen, setIsModalOpen] = useState(false);
+//   const [editingProduct, setEditingProduct] =
+//     useState<ExtendedProduct | null>(null);
+//   const [specText, setSpecText] = useState("");
+
+//   const fileInputRef = useRef<HTMLInputElement>(null);
+//   const videoInputRef = useRef<HTMLInputElement>(null);
+
+//   const navigate = useNavigate();
+//   const token = localStorage.getItem("cricface_admin_token");
+
+//   useEffect(() => {
+//     if (!token) {
+//       navigate("/admin/login");
+//       return;
+//     }
+//     fetchProducts();
+//   }, []);
+
+//   const closeModal = () => {
+//     setIsModalOpen(false);
+//     setEditingProduct(null);
+//     setSpecText("");
+//   };
+
+//   const fetchProducts = async () => {
+//     const res = await fetch("/api/products");
+//     const data = await res.json();
+//     setProducts(data);
+//   };
+
+//   const handleSubmit = async (e: React.FormEvent) => {
+//     e.preventDefault();
+
+//     const formData = new FormData();
+
+//     const specs: Record<string, string> = {};
+//     specText.split("\n").forEach((line) => {
+//       const [key, value] = line.split(":");
+//       if (key && value) specs[key.trim()] = value.trim();
+//     });
+
+//     formData.append("name", editingProduct?.name || "");
+
+//     formData.append("original_price_inr", String(editingProduct?.original_price_inr || ""));
+//     formData.append("price_inr", String(editingProduct?.price_inr || 0));
+
+//     formData.append("original_price_usd", String(editingProduct?.original_price_usd || ""));
+//     formData.append("price_usd", String(editingProduct?.price_usd || 0));
+
+//     formData.append("original_price_eur", String(editingProduct?.original_price_eur || ""));
+//     formData.append("price_eur", String(editingProduct?.price_eur || 0));
+
+//     formData.append("grade", editingProduct?.grade || "");
+//     formData.append("willow_type", editingProduct?.willow_type || "");
+//     formData.append("weight", editingProduct?.weight || "");
+//     formData.append("style", editingProduct?.style || "");
+//     formData.append("description", editingProduct?.description || "");
+//     formData.append("specifications", JSON.stringify(specs));
+//     formData.append("featured", editingProduct?.featured ? "1" : "0");
+
+//     if (editingProduct?.imagesFiles) {
+//       editingProduct.imagesFiles.forEach((file) => {
+//         formData.append("images", file);
+//       });
+//     }
+
+//     if (editingProduct?.videoFile) {
+//       formData.append("video", editingProduct.videoFile);
+//     }
+
+//     const isEditing = !!editingProduct?.id;
+
+//     const res = await fetch(
+//       isEditing ? `/api/products/${editingProduct?.id}` : "/api/products",
+//       {
+//         method: isEditing ? "PUT" : "POST",
+//         headers: { Authorization: `Bearer ${token}` },
+//         body: formData,
+//       }
+//     );
+
+//     if (!res.ok) {
+//       const err = await res.text();
+//       alert("Error saving product:\n" + err);
+//       return;
+//     }
+
+//     closeModal();
+//     fetchProducts();
+//   };
+
+//   return (
+//     <div className="pt-32 pb-24 bg-zinc-50 min-h-screen">
+//       <div className="max-w-7xl mx-auto px-4">
+
+//         {/* Header */}
+//         <div className="flex justify-between items-center mb-10">
+//           <h1 className="text-3xl font-black">DASHBOARD</h1>
+
+//           <button
+//             onClick={() => {
+//               setEditingProduct({
+//                 imagesFiles: [],
+//                 videoFile: null,
+//                 featured: false,
+//               });
+//               setSpecText("");
+//               setIsModalOpen(true);
+//             }}
+//             className="bg-gold text-black font-bold px-5 py-2 rounded-lg flex items-center gap-2"
+//           >
+//             <Plus size={18} />
+//             Add Bat
+//           </button>
+//         </div>
+//       </div>
+
+//       {/* Product Table */}
+//       <div className="max-w-7xl mx-auto px-4 mt-8">
+//         <div className="bg-white rounded-2xl shadow border overflow-hidden">
+//           <table className="w-full text-left">
+//             <thead className="bg-zinc-50 border-b">
+//               <tr>
+//                 <th className="px-6 py-4 text-sm">Product</th>
+//                 <th className="px-6 py-4 text-sm">Willow / Grade</th>
+//                 <th className="px-6 py-4 text-sm">Featured</th>
+//                 <th className="px-6 py-4 text-sm">Price (INR)</th>
+//                 <th className="px-6 py-4 text-sm">Actions</th>
+//               </tr>
+//             </thead>
+//             <tbody>
+//               {products.map((product) => (
+//                 <tr key={product.id} className="border-b">
+//                   <td className="px-6 py-4 flex items-center gap-4">
+//                     {product.images?.[0] && (
+//                       <img
+//                         src={product.images[0]}
+//                         className="w-10 h-10 object-cover rounded"
+//                       />
+//                     )}
+//                     {product.name}
+//                   </td>
+
+//                   <td className="px-6 py-4 text-sm">
+//                     {product.willow_type}
+//                     <div className="text-xs text-zinc-400">
+//                       {product.grade}
+//                     </div>
+//                   </td>
+
+//                   <td className="px-6 py-4 text-sm">
+//                     {product.featured ? "⭐ Yes" : "No"}
+//                   </td>
+
+//                   <td className="px-6 py-4 text-sm">
+//                     ₹{product.price_inr?.toLocaleString()}
+//                   </td>
+
+//                   <td className="px-6 py-4 flex gap-3">
+//                     <button
+//                       onClick={() => {
+//                         setEditingProduct(product);
+//                         setSpecText(
+//                           product.specifications
+//                             ? Object.entries(product.specifications)
+//                                 .map(([k, v]) => `${k}: ${v}`)
+//                                 .join("\n")
+//                             : ""
+//                         );
+//                         setIsModalOpen(true);
+//                       }}
+//                       className="text-blue-600"
+//                     >
+//                       <Edit2 size={16} />
+//                     </button>
+
+//                     <button
+//                       onClick={async () => {
+//                         if (!confirm("Delete this product?")) return;
+//                         await fetch(`/api/products/${product.id}`, {
+//                           method: "DELETE",
+//                           headers: { Authorization: `Bearer ${token}` },
+//                         });
+//                         fetchProducts();
+//                       }}
+//                       className="text-red-600"
+//                     >
+//                       <Trash2 size={16} />
+//                     </button>
+//                   </td>
+//                 </tr>
+//               ))}
+//             </tbody>
+//           </table>
+//         </div>
+//       </div>
+
+//       {/* MODAL */}
+//       <AnimatePresence>
+//         {isModalOpen && (
+//           <motion.div
+//             className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center pt-28 px-4 z-50 overflow-y-auto"
+//             initial={{ opacity: 0 }}
+//             animate={{ opacity: 1 }}
+//             exit={{ opacity: 0 }}
+//             onClick={closeModal}
+//           >
+//             <motion.div
+//               className="bg-white w-full max-w-xl rounded-2xl p-6 shadow-2xl relative"
+//               initial={{ scale: 0.9, opacity: 0, y: 40 }}
+//               animate={{ scale: 1, opacity: 1, y: 0 }}
+//               exit={{ scale: 0.9, opacity: 0, y: 40 }}
+//               onClick={(e) => e.stopPropagation()}
+//             >
+//               <button
+//                 onClick={closeModal}
+//                 className="absolute top-4 right-4 text-zinc-400"
+//               >
+//                 <X size={20} />
+//               </button>
+
+//               <h2 className="text-xl font-black mb-4">
+//                 {editingProduct?.id ? "Edit Product" : "Add Product"}
+//               </h2>
+
+//               <form onSubmit={handleSubmit} className="space-y-4">
+
+//                 <input
+//                   type="text"
+//                   placeholder="Product Name"
+//                   value={editingProduct?.name || ""}
+//                   onChange={(e) =>
+//                     setEditingProduct({ ...editingProduct, name: e.target.value })
+//                   }
+//                   className="w-full px-3 py-2 bg-zinc-50 rounded-lg text-sm"
+//                 />
+
+//                 {/* INR */}
+//                 <div className="grid grid-cols-2 gap-3">
+//                   <input
+//                     type="number"
+//                     placeholder="Original INR"
+//                     value={editingProduct?.original_price_inr || ""}
+//                     onChange={(e) =>
+//                       setEditingProduct({
+//                         ...editingProduct,
+//                         original_price_inr: Number(e.target.value)
+//                       })
+//                     }
+//                     className="px-3 py-2 bg-zinc-50 rounded-lg text-sm"
+//                   />
+//                   <input
+//                     type="number"
+//                     placeholder="Selling INR"
+//                     value={editingProduct?.price_inr || ""}
+//                     onChange={(e) =>
+//                       setEditingProduct({
+//                         ...editingProduct,
+//                         price_inr: Number(e.target.value)
+//                       })
+//                     }
+//                     className="px-3 py-2 bg-zinc-50 rounded-lg text-sm"
+//                   />
+//                 </div>
+
+//                 {/* USD */}
+//                 <div className="grid grid-cols-2 gap-3">
+//                   <input
+//                     type="number"
+//                     placeholder="Original USD"
+//                     value={editingProduct?.original_price_usd || ""}
+//                     onChange={(e) =>
+//                       setEditingProduct({
+//                         ...editingProduct,
+//                         original_price_usd: Number(e.target.value)
+//                       })
+//                     }
+//                     className="px-3 py-2 bg-zinc-50 rounded-lg text-sm"
+//                   />
+//                   <input
+//                     type="number"
+//                     placeholder="Selling USD"
+//                     value={editingProduct?.price_usd || ""}
+//                     onChange={(e) =>
+//                       setEditingProduct({
+//                         ...editingProduct,
+//                         price_usd: Number(e.target.value)
+//                       })
+//                     }
+//                     className="px-3 py-2 bg-zinc-50 rounded-lg text-sm"
+//                   />
+//                 </div>
+
+//                 {/* EUR */}
+//                 <div className="grid grid-cols-2 gap-3">
+//                   <input
+//                     type="number"
+//                     placeholder="Original EUR"
+//                     value={editingProduct?.original_price_eur || ""}
+//                     onChange={(e) =>
+//                       setEditingProduct({
+//                         ...editingProduct,
+//                         original_price_eur: Number(e.target.value)
+//                       })
+//                     }
+//                     className="px-3 py-2 bg-zinc-50 rounded-lg text-sm"
+//                   />
+//                   <input
+//                     type="number"
+//                     placeholder="Selling EUR"
+//                     value={editingProduct?.price_eur || ""}
+//                     onChange={(e) =>
+//                       setEditingProduct({
+//                         ...editingProduct,
+//                         price_eur: Number(e.target.value)
+//                       })
+//                     }
+//                     className="px-3 py-2 bg-zinc-50 rounded-lg text-sm"
+//                   />
+//                 </div>
+
+//                 <input
+//                   type="text"
+//                   placeholder="Willow Type"
+//                   value={editingProduct?.willow_type || ""}
+//                   onChange={(e) =>
+//                     setEditingProduct({
+//                       ...editingProduct,
+//                       willow_type: e.target.value
+//                     })
+//                   }
+//                   className="w-full px-3 py-2 bg-zinc-50 rounded-lg text-sm"
+//                 />
+
+//                 <input
+//                   type="text"
+//                   placeholder="Grade"
+//                   value={editingProduct?.grade || ""}
+//                   onChange={(e) =>
+//                     setEditingProduct({
+//                       ...editingProduct,
+//                       grade: e.target.value
+//                     })
+//                   }
+//                   className="w-full px-3 py-2 bg-zinc-50 rounded-lg text-sm"
+//                 />
+
+//                 <textarea
+//                   rows={3}
+//                   placeholder="Description"
+//                   value={editingProduct?.description || ""}
+//                   onChange={(e) =>
+//                     setEditingProduct({
+//                       ...editingProduct,
+//                       description: e.target.value
+//                     })
+//                   }
+//                   className="w-full px-3 py-2 bg-zinc-50 rounded-lg text-sm resize-none"
+//                 />
+
+//                 <textarea
+//                   rows={4}
+//                   placeholder="Edge: 40mm
+// Spine: 65mm"
+//                   value={specText}
+//                   onChange={(e) => setSpecText(e.target.value)}
+//                   className="w-full px-3 py-2 bg-zinc-50 rounded-lg text-sm resize-none"
+//                 />
+
+//                 <div className="flex items-center gap-2">
+//                   <input
+//                     type="checkbox"
+//                     checked={editingProduct?.featured || false}
+//                     onChange={(e) =>
+//                       setEditingProduct({
+//                         ...editingProduct,
+//                         featured: e.target.checked
+//                       })
+//                     }
+//                   />
+//                   Featured
+//                 </div>
+
+//                 {/* IMAGE INPUT */}
+// <input
+//   type="file"
+//   multiple
+//   hidden
+//   accept="image/*"
+//   ref={fileInputRef}
+//   onChange={(e) => {
+//     if (!e.target.files || !editingProduct) return;
+//     setEditingProduct({
+//       ...editingProduct,
+//       imagesFiles: Array.from(e.target.files),
+//     });
+//   }}
+// />
+
+// {/* VIDEO INPUT */}
+// <input
+//   type="file"
+//   hidden
+//   accept="video/*"
+//   ref={videoInputRef}
+//   onChange={(e) => {
+//     if (!e.target.files || !editingProduct) return;
+//     setEditingProduct({
+//       ...editingProduct,
+//       videoFile: e.target.files[0],
+//     });
+//   }}
+// />
+
+//                 <button
+//                   type="button"
+//                   onClick={() => fileInputRef.current?.click()}
+//                   className="w-full flex items-center justify-center gap-2 bg-zinc-100 py-2 rounded-lg text-sm"
+//                 >
+//                   <Upload size={16} />
+//                   Upload Images
+//                 </button>
+
+//                 <button
+//                   type="button"
+//                   onClick={() => videoInputRef.current?.click()}
+//                   className="w-full flex items-center justify-center gap-2 bg-zinc-100 py-2 rounded-lg text-sm"
+//                 >
+//                   <Video size={16} />
+//                   Upload Video
+//                 </button>
+
+//                 <button
+//                   type="submit"
+//                   className="w-full bg-black text-white py-2 rounded-lg text-sm"
+//                 >
+//                   Save Product
+//                 </button>
+
+//               </form>
+//             </motion.div>
+//           </motion.div>
+//         )}
+//       </AnimatePresence>
+//     </div>
+//   );
+// };
+
+// export default AdminDashboard;
+
+// 02-03-2026
+
 import React, { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Trash2, Edit2, X, Upload, Video } from "lucide-react";
+import { Plus, Trash2, Edit2, X, Upload, Video, Package, ShoppingBag, LogOut, ChevronDown, ChevronUp, CheckCircle, Clock, XCircle } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Product } from "../types";
+import { Product, Order, SizePrice } from "../types";
+
+const SIZES = ["Size 3", "Size 4", "Size 5", "Size 6", "Harrow"];
 
 interface ExtendedProduct extends Partial<Product> {
   imagesFiles?: File[];
@@ -4253,63 +4727,190 @@ interface ExtendedProduct extends Partial<Product> {
   original_price_inr?: number;
   original_price_usd?: number;
   original_price_eur?: number;
+  size_prices?: SizePrice[];
 }
 
+// ─── Orders Tab ───────────────────────────────────────────────────────────────
+const OrdersTab = ({ token }: { token: string }) => {
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [expandedId, setExpandedId] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch("/api/orders", { headers: { Authorization: `Bearer ${token}` } })
+      .then((r) => r.json())
+      .then((data) => { setOrders(data); setLoading(false); });
+  }, []);
+
+  const statusIcon = (status: string) => {
+    if (status === "paid") return <CheckCircle size={16} className="text-green-500" />;
+    if (status === "failed") return <XCircle size={16} className="text-red-500" />;
+    return <Clock size={16} className="text-yellow-500" />;
+  };
+
+  const statusBadge = (status: string) => {
+    const map: Record<string, string> = {
+      paid: "bg-green-100 text-green-700",
+      failed: "bg-red-100 text-red-700",
+      pending: "bg-yellow-100 text-yellow-700",
+    };
+    return map[status] || map.pending;
+  };
+
+  if (loading) return <div className="text-center py-20 text-zinc-400">Loading orders...</div>;
+  if (!orders.length) return (
+    <div className="text-center py-20">
+      <ShoppingBag size={48} className="mx-auto text-zinc-200 mb-4" />
+      <p className="text-zinc-400">No orders yet.</p>
+    </div>
+  );
+
+  return (
+    <div className="space-y-3">
+      {orders.map((order) => (
+        <div key={order.id} className="bg-white rounded-2xl border border-zinc-100 shadow-sm overflow-hidden">
+          <div
+            className="flex items-center justify-between p-5 cursor-pointer hover:bg-zinc-50 transition-colors"
+            onClick={() => setExpandedId(expandedId === order.id ? null : order.id)}
+          >
+            <div className="flex items-center gap-4">
+              {statusIcon(order.payment_status)}
+              <div>
+                <p className="font-bold text-zinc-900">{order.customer_name}</p>
+                <p className="text-sm text-zinc-400">{order.product_name}</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-4">
+              <div className="text-right">
+                <p className="font-black text-cricket-green">₹{order.total_price_inr.toLocaleString()}</p>
+                <p className="text-xs text-zinc-400">{new Date(order.created_at).toLocaleDateString("en-IN")}</p>
+              </div>
+              <span className={`text-xs px-2 py-1 rounded-full font-bold ${statusBadge(order.payment_status)}`}>
+                {order.payment_status.toUpperCase()}
+              </span>
+              {expandedId === order.id ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+            </div>
+          </div>
+
+          <AnimatePresence>
+            {expandedId === order.id && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                className="border-t border-zinc-100 overflow-hidden"
+              >
+                <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-6 text-sm">
+                  <div>
+                    <h4 className="font-bold text-zinc-500 uppercase tracking-widest text-xs mb-3">Customer</h4>
+                    <div className="space-y-1 text-zinc-700">
+                      <p><strong>Name:</strong> {order.customer_name}</p>
+                      <p><strong>Phone:</strong> {order.customer_phone}</p>
+                      {order.customer_email && <p><strong>Email:</strong> {order.customer_email}</p>}
+                      <p><strong>Address:</strong> {order.delivery_address}</p>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-zinc-500 uppercase tracking-widest text-xs mb-3">Customization</h4>
+                    {(() => {
+                      const c = typeof order.customization === "string"
+                        ? JSON.parse(order.customization)
+                        : order.customization;
+                      return (
+                        <div className="space-y-1 text-zinc-700">
+                          {c.size && <p><strong>Size:</strong> {c.size}</p>}
+                          {c.weight && <p><strong>Weight:</strong> {c.weight}</p>}
+                          {c.handle_shape && <p><strong>Handle:</strong> {c.handle_shape}</p>}
+                          {c.profile && <p><strong>Profile:</strong> {c.profile}</p>}
+                          {c.laser_engraving && <p><strong>Laser Text:</strong> "{c.laser_engraving}"</p>}
+                          <p><strong>Threading:</strong> {c.threading ? "Yes" : "No"}</p>
+                          <p><strong>Extra Grip:</strong> {c.extra_grip ? "Yes" : "No"}</p>
+                        </div>
+                      );
+                    })()}
+                  </div>
+                  <div>
+                    <h4 className="font-bold text-zinc-500 uppercase tracking-widest text-xs mb-3">Payment</h4>
+                    <div className="space-y-1 text-zinc-700">
+                      <p><strong>Base Price:</strong> ₹{order.base_price_inr.toLocaleString()}</p>
+                      {order.addon_price_inr > 0 && <p><strong>Add-ons:</strong> ₹{order.addon_price_inr.toLocaleString()}</p>}
+                      <p><strong>Total:</strong> ₹{order.total_price_inr.toLocaleString()}</p>
+                      {order.razorpay_order_id && <p className="text-xs text-zinc-400 break-all"><strong>Order ID:</strong> {order.razorpay_order_id}</p>}
+                      {order.razorpay_payment_id && <p className="text-xs text-zinc-400 break-all"><strong>Payment ID:</strong> {order.razorpay_payment_id}</p>}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      ))}
+    </div>
+  );
+};
+
+// ─── Main Dashboard ───────────────────────────────────────────────────────────
 const AdminDashboard = () => {
   const [products, setProducts] = useState<Product[]>([]);
+  const [activeTab, setActiveTab] = useState<"products" | "orders">("products");
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] =
-    useState<ExtendedProduct | null>(null);
+  const [editingProduct, setEditingProduct] = useState<ExtendedProduct | null>(null);
   const [specText, setSpecText] = useState("");
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoInputRef = useRef<HTMLInputElement>(null);
-
   const navigate = useNavigate();
-  const token = localStorage.getItem("cricface_admin_token");
+  const token = localStorage.getItem("cricface_admin_token") || "";
 
   useEffect(() => {
-    if (!token) {
-      navigate("/admin/login");
-      return;
-    }
+    if (!token) { navigate("/admin/login"); return; }
     fetchProducts();
   }, []);
 
-  const closeModal = () => {
-    setIsModalOpen(false);
-    setEditingProduct(null);
-    setSpecText("");
-  };
-
+  const closeModal = () => { setIsModalOpen(false); setEditingProduct(null); setSpecText(""); };
   const fetchProducts = async () => {
     const res = await fetch("/api/products");
     const data = await res.json();
-    setProducts(data);
+    setProducts(data.map((p: any) => ({
+      ...p,
+      size_prices: typeof p.size_prices === "string" ? JSON.parse(p.size_prices || "[]") : (p.size_prices || []),
+    })));
+  };
+
+  const updateSizePrice = (size: string, field: keyof SizePrice, value: number) => {
+    const current: SizePrice[] = editingProduct?.size_prices || [];
+    const exists = current.find((sp) => sp.size === size);
+    let updated: SizePrice[];
+    if (exists) {
+      updated = current.map((sp) => sp.size === size ? { ...sp, [field]: value } : sp);
+    } else {
+      updated = [...current, { size, price_inr: 0, price_usd: 0, price_eur: 0, [field]: value }];
+    }
+    setEditingProduct({ ...editingProduct, size_prices: updated });
+  };
+
+  const getSizePrice = (size: string): SizePrice => {
+    return editingProduct?.size_prices?.find((sp) => sp.size === size)
+      || { size, price_inr: 0, price_usd: 0, price_eur: 0 };
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const formData = new FormData();
-
     const specs: Record<string, string> = {};
     specText.split("\n").forEach((line) => {
-      const [key, value] = line.split(":");
-      if (key && value) specs[key.trim()] = value.trim();
+      const [key, ...rest] = line.split(":");
+      if (key && rest.length) specs[key.trim()] = rest.join(":").trim();
     });
 
     formData.append("name", editingProduct?.name || "");
-
     formData.append("original_price_inr", String(editingProduct?.original_price_inr || ""));
     formData.append("price_inr", String(editingProduct?.price_inr || 0));
-
     formData.append("original_price_usd", String(editingProduct?.original_price_usd || ""));
     formData.append("price_usd", String(editingProduct?.price_usd || 0));
-
     formData.append("original_price_eur", String(editingProduct?.original_price_eur || ""));
     formData.append("price_eur", String(editingProduct?.price_eur || 0));
-
     formData.append("grade", editingProduct?.grade || "");
     formData.append("willow_type", editingProduct?.willow_type || "");
     formData.append("weight", editingProduct?.weight || "");
@@ -4317,386 +4918,318 @@ const AdminDashboard = () => {
     formData.append("description", editingProduct?.description || "");
     formData.append("specifications", JSON.stringify(specs));
     formData.append("featured", editingProduct?.featured ? "1" : "0");
+    formData.append("size_prices", JSON.stringify(editingProduct?.size_prices || []));
 
-    if (editingProduct?.imagesFiles) {
-      editingProduct.imagesFiles.forEach((file) => {
-        formData.append("images", file);
-      });
-    }
-
-    if (editingProduct?.videoFile) {
-      formData.append("video", editingProduct.videoFile);
-    }
+    editingProduct?.imagesFiles?.forEach((file) => formData.append("images", file));
+    if (editingProduct?.videoFile) formData.append("video", editingProduct.videoFile);
 
     const isEditing = !!editingProduct?.id;
-
     const res = await fetch(
       isEditing ? `/api/products/${editingProduct?.id}` : "/api/products",
-      {
-        method: isEditing ? "PUT" : "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
-      }
+      { method: isEditing ? "PUT" : "POST", headers: { Authorization: `Bearer ${token}` }, body: formData }
     );
 
-    if (!res.ok) {
-      const err = await res.text();
-      alert("Error saving product:\n" + err);
-      return;
-    }
-
+    if (!res.ok) { alert("Error saving product:\n" + await res.text()); return; }
     closeModal();
     fetchProducts();
   };
 
   return (
-    <div className="pt-32 pb-24 bg-zinc-50 min-h-screen">
+    <div className="pt-28 pb-24 bg-zinc-50 min-h-screen">
       <div className="max-w-7xl mx-auto px-4">
 
         {/* Header */}
-        <div className="flex justify-between items-center mb-10">
+        <div className="flex justify-between items-center mb-8">
           <h1 className="text-3xl font-black">DASHBOARD</h1>
+          <div className="flex gap-3">
+            {activeTab === "products" && (
+              <button
+                onClick={() => {
+                  setEditingProduct({ imagesFiles: [], videoFile: null, featured: false, size_prices: [] });
+                  setSpecText("");
+                  setIsModalOpen(true);
+                }}
+                className="bg-gold text-black font-bold px-5 py-2 rounded-lg flex items-center gap-2"
+              >
+                <Plus size={18} /> Add Bat
+              </button>
+            )}
+            <button
+              onClick={() => { localStorage.removeItem("cricface_admin_token"); navigate("/admin/login"); }}
+              className="bg-white text-zinc-500 font-bold px-4 py-2 rounded-lg border border-zinc-200 flex items-center gap-2"
+            >
+              <LogOut size={16} /> Logout
+            </button>
+          </div>
+        </div>
 
+        {/* Tabs */}
+        <div className="flex gap-2 mb-8 bg-white p-1 rounded-xl border border-zinc-100 w-fit shadow-sm">
           <button
-            onClick={() => {
-              setEditingProduct({
-                imagesFiles: [],
-                videoFile: null,
-                featured: false,
-              });
-              setSpecText("");
-              setIsModalOpen(true);
-            }}
-            className="bg-gold text-black font-bold px-5 py-2 rounded-lg flex items-center gap-2"
+            onClick={() => setActiveTab("products")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-bold text-sm transition-all ${
+              activeTab === "products" ? "bg-zinc-900 text-white" : "text-zinc-500 hover:text-zinc-900"
+            }`}
           >
-            <Plus size={18} />
-            Add Bat
+            <Package size={16} /> Products
+          </button>
+          <button
+            onClick={() => setActiveTab("orders")}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-lg font-bold text-sm transition-all ${
+              activeTab === "orders" ? "bg-zinc-900 text-white" : "text-zinc-500 hover:text-zinc-900"
+            }`}
+          >
+            <ShoppingBag size={16} /> Orders
           </button>
         </div>
-      </div>
 
-      {/* Product Table */}
-      <div className="max-w-7xl mx-auto px-4 mt-8">
-        <div className="bg-white rounded-2xl shadow border overflow-hidden">
-          <table className="w-full text-left">
-            <thead className="bg-zinc-50 border-b">
-              <tr>
-                <th className="px-6 py-4 text-sm">Product</th>
-                <th className="px-6 py-4 text-sm">Willow / Grade</th>
-                <th className="px-6 py-4 text-sm">Featured</th>
-                <th className="px-6 py-4 text-sm">Price (INR)</th>
-                <th className="px-6 py-4 text-sm">Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {products.map((product) => (
-                <tr key={product.id} className="border-b">
-                  <td className="px-6 py-4 flex items-center gap-4">
-                    {product.images?.[0] && (
-                      <img
-                        src={product.images[0]}
-                        className="w-10 h-10 object-cover rounded"
-                      />
-                    )}
-                    {product.name}
-                  </td>
-
-                  <td className="px-6 py-4 text-sm">
-                    {product.willow_type}
-                    <div className="text-xs text-zinc-400">
-                      {product.grade}
-                    </div>
-                  </td>
-
-                  <td className="px-6 py-4 text-sm">
-                    {product.featured ? "⭐ Yes" : "No"}
-                  </td>
-
-                  <td className="px-6 py-4 text-sm">
-                    ₹{product.price_inr?.toLocaleString()}
-                  </td>
-
-                  <td className="px-6 py-4 flex gap-3">
-                    <button
-                      onClick={() => {
-                        setEditingProduct(product);
-                        setSpecText(
-                          product.specifications
-                            ? Object.entries(product.specifications)
-                                .map(([k, v]) => `${k}: ${v}`)
-                                .join("\n")
-                            : ""
-                        );
-                        setIsModalOpen(true);
-                      }}
-                      className="text-blue-600"
-                    >
-                      <Edit2 size={16} />
-                    </button>
-
-                    <button
-                      onClick={async () => {
-                        if (!confirm("Delete this product?")) return;
-                        await fetch(`/api/products/${product.id}`, {
-                          method: "DELETE",
-                          headers: { Authorization: `Bearer ${token}` },
-                        });
-                        fetchProducts();
-                      }}
-                      className="text-red-600"
-                    >
-                      <Trash2 size={16} />
-                    </button>
-                  </td>
+        {/* Products Tab */}
+        {activeTab === "products" && (
+          <div className="bg-white rounded-2xl shadow border border-zinc-100 overflow-hidden">
+            <table className="w-full text-left">
+              <thead className="bg-zinc-50 border-b">
+                <tr>
+                  <th className="px-6 py-4 text-sm font-bold text-zinc-500">Product</th>
+                  <th className="px-6 py-4 text-sm font-bold text-zinc-500">Willow / Grade</th>
+                  <th className="px-6 py-4 text-sm font-bold text-zinc-500">Featured</th>
+                  <th className="px-6 py-4 text-sm font-bold text-zinc-500">Base Price (INR)</th>
+                  <th className="px-6 py-4 text-sm font-bold text-zinc-500">Size Pricing</th>
+                  <th className="px-6 py-4 text-sm font-bold text-zinc-500">Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {products.map((product) => (
+                  <tr key={product.id} className="border-b hover:bg-zinc-50/50 transition-colors">
+                    <td className="px-6 py-4 flex items-center gap-4">
+                      {product.images?.[0] && (
+                        <img src={product.images[0]} className="w-10 h-10 object-cover rounded-lg" />
+                      )}
+                      <span className="font-bold text-zinc-900">{product.name}</span>
+                    </td>
+                    <td className="px-6 py-4 text-sm">
+                      <p className="text-zinc-900 font-medium">{product.willow_type}</p>
+                      <p className="text-zinc-400 text-xs">{product.grade}</p>
+                    </td>
+                    <td className="px-6 py-4 text-sm">{product.featured ? "⭐ Yes" : "—"}</td>
+                    <td className="px-6 py-4 text-sm font-bold text-cricket-green">₹{product.price_inr?.toLocaleString()}</td>
+                    <td className="px-6 py-4 text-sm">
+                      {(product as any).size_prices?.length > 0
+                        ? <span className="bg-blue-100 text-blue-700 text-xs px-2 py-1 rounded-full font-bold">{(product as any).size_prices.length} sizes</span>
+                        : <span className="text-zinc-300 text-xs">—</span>
+                      }
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex gap-3">
+                        <button
+                          onClick={() => {
+                            setEditingProduct({
+                              ...product,
+                              size_prices: (product as any).size_prices || [],
+                            });
+                            setSpecText(
+                              product.specifications
+                                ? Object.entries(product.specifications).map(([k, v]) => `${k}: ${v}`).join("\n")
+                                : ""
+                            );
+                            setIsModalOpen(true);
+                          }}
+                          className="text-blue-500 hover:text-blue-700"
+                        >
+                          <Edit2 size={16} />
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (!confirm("Delete this product?")) return;
+                            await fetch(`/api/products/${product.id}`, {
+                              method: "DELETE",
+                              headers: { Authorization: `Bearer ${token}` },
+                            });
+                            fetchProducts();
+                          }}
+                          className="text-red-400 hover:text-red-600"
+                        >
+                          <Trash2 size={16} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+
+        {/* Orders Tab */}
+        {activeTab === "orders" && <OrdersTab token={token} />}
+
       </div>
 
-      {/* MODAL */}
+      {/* ── Product Modal ── */}
       <AnimatePresence>
         {isModalOpen && (
           <motion.div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center pt-28 px-4 z-50 overflow-y-auto"
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-start justify-center pt-20 px-4 z-50 overflow-y-auto pb-10"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={closeModal}
           >
             <motion.div
-              className="bg-white w-full max-w-xl rounded-2xl p-6 shadow-2xl relative"
+              className="bg-white w-full max-w-2xl rounded-2xl p-6 shadow-2xl relative"
               initial={{ scale: 0.9, opacity: 0, y: 40 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.9, opacity: 0, y: 40 }}
               onClick={(e) => e.stopPropagation()}
             >
-              <button
-                onClick={closeModal}
-                className="absolute top-4 right-4 text-zinc-400"
-              >
+              <button onClick={closeModal} className="absolute top-4 right-4 text-zinc-400 hover:text-zinc-900">
                 <X size={20} />
               </button>
 
-              <h2 className="text-xl font-black mb-4">
+              <h2 className="text-xl font-black mb-6">
                 {editingProduct?.id ? "Edit Product" : "Add Product"}
               </h2>
 
               <form onSubmit={handleSubmit} className="space-y-4">
 
                 <input
-                  type="text"
-                  placeholder="Product Name"
+                  type="text" placeholder="Product Name *" required
                   value={editingProduct?.name || ""}
-                  onChange={(e) =>
-                    setEditingProduct({ ...editingProduct, name: e.target.value })
-                  }
-                  className="w-full px-3 py-2 bg-zinc-50 rounded-lg text-sm"
+                  onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
+                  className="w-full px-3 py-2 bg-zinc-50 rounded-lg text-sm border border-zinc-200 focus:outline-none focus:ring-2 focus:ring-gold/20"
                 />
 
                 {/* INR */}
+                <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">INR Pricing</p>
                 <div className="grid grid-cols-2 gap-3">
-                  <input
-                    type="number"
-                    placeholder="Original INR"
+                  <input type="number" placeholder="Original INR"
                     value={editingProduct?.original_price_inr || ""}
-                    onChange={(e) =>
-                      setEditingProduct({
-                        ...editingProduct,
-                        original_price_inr: Number(e.target.value)
-                      })
-                    }
-                    className="px-3 py-2 bg-zinc-50 rounded-lg text-sm"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Selling INR"
+                    onChange={(e) => setEditingProduct({ ...editingProduct, original_price_inr: Number(e.target.value) })}
+                    className="px-3 py-2 bg-zinc-50 rounded-lg text-sm border border-zinc-200 focus:outline-none" />
+                  <input type="number" placeholder="Selling INR *" required
                     value={editingProduct?.price_inr || ""}
-                    onChange={(e) =>
-                      setEditingProduct({
-                        ...editingProduct,
-                        price_inr: Number(e.target.value)
-                      })
-                    }
-                    className="px-3 py-2 bg-zinc-50 rounded-lg text-sm"
-                  />
+                    onChange={(e) => setEditingProduct({ ...editingProduct, price_inr: Number(e.target.value) })}
+                    className="px-3 py-2 bg-zinc-50 rounded-lg text-sm border border-zinc-200 focus:outline-none" />
                 </div>
 
                 {/* USD */}
+                <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">USD Pricing</p>
                 <div className="grid grid-cols-2 gap-3">
-                  <input
-                    type="number"
-                    placeholder="Original USD"
+                  <input type="number" placeholder="Original USD"
                     value={editingProduct?.original_price_usd || ""}
-                    onChange={(e) =>
-                      setEditingProduct({
-                        ...editingProduct,
-                        original_price_usd: Number(e.target.value)
-                      })
-                    }
-                    className="px-3 py-2 bg-zinc-50 rounded-lg text-sm"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Selling USD"
+                    onChange={(e) => setEditingProduct({ ...editingProduct, original_price_usd: Number(e.target.value) })}
+                    className="px-3 py-2 bg-zinc-50 rounded-lg text-sm border border-zinc-200 focus:outline-none" />
+                  <input type="number" placeholder="Selling USD *" required
                     value={editingProduct?.price_usd || ""}
-                    onChange={(e) =>
-                      setEditingProduct({
-                        ...editingProduct,
-                        price_usd: Number(e.target.value)
-                      })
-                    }
-                    className="px-3 py-2 bg-zinc-50 rounded-lg text-sm"
-                  />
+                    onChange={(e) => setEditingProduct({ ...editingProduct, price_usd: Number(e.target.value) })}
+                    className="px-3 py-2 bg-zinc-50 rounded-lg text-sm border border-zinc-200 focus:outline-none" />
                 </div>
 
                 {/* EUR */}
+                <p className="text-xs font-bold text-zinc-400 uppercase tracking-widest">EUR Pricing</p>
                 <div className="grid grid-cols-2 gap-3">
-                  <input
-                    type="number"
-                    placeholder="Original EUR"
+                  <input type="number" placeholder="Original EUR"
                     value={editingProduct?.original_price_eur || ""}
-                    onChange={(e) =>
-                      setEditingProduct({
-                        ...editingProduct,
-                        original_price_eur: Number(e.target.value)
-                      })
-                    }
-                    className="px-3 py-2 bg-zinc-50 rounded-lg text-sm"
-                  />
-                  <input
-                    type="number"
-                    placeholder="Selling EUR"
+                    onChange={(e) => setEditingProduct({ ...editingProduct, original_price_eur: Number(e.target.value) })}
+                    className="px-3 py-2 bg-zinc-50 rounded-lg text-sm border border-zinc-200 focus:outline-none" />
+                  <input type="number" placeholder="Selling EUR *" required
                     value={editingProduct?.price_eur || ""}
-                    onChange={(e) =>
-                      setEditingProduct({
-                        ...editingProduct,
-                        price_eur: Number(e.target.value)
-                      })
-                    }
-                    className="px-3 py-2 bg-zinc-50 rounded-lg text-sm"
-                  />
+                    onChange={(e) => setEditingProduct({ ...editingProduct, price_eur: Number(e.target.value) })}
+                    className="px-3 py-2 bg-zinc-50 rounded-lg text-sm border border-zinc-200 focus:outline-none" />
                 </div>
 
-                <input
-                  type="text"
-                  placeholder="Willow Type"
+                {/* ── Size-based Pricing ── */}
+                <div className="bg-blue-50 rounded-xl p-4 border border-blue-100">
+                  <p className="text-sm font-bold text-blue-800 mb-1">Size-based Pricing (optional)</p>
+                  <p className="text-xs text-blue-500 mb-3">If set, the price shown will change when customer selects a size. Leave 0 to use base price above.</p>
+                  <div className="space-y-3">
+                    {SIZES.map((size) => {
+                      const sp = getSizePrice(size);
+                      return (
+                        <div key={size} className="grid grid-cols-4 gap-2 items-center">
+                          <span className="text-xs font-bold text-zinc-600">{size}</span>
+                          <input
+                            type="number" placeholder="INR"
+                            value={sp.price_inr || ""}
+                            onChange={(e) => updateSizePrice(size, "price_inr", Number(e.target.value))}
+                            className="px-2 py-1.5 bg-white rounded-lg text-xs border border-zinc-200 focus:outline-none"
+                          />
+                          <input
+                            type="number" placeholder="USD"
+                            value={sp.price_usd || ""}
+                            onChange={(e) => updateSizePrice(size, "price_usd", Number(e.target.value))}
+                            className="px-2 py-1.5 bg-white rounded-lg text-xs border border-zinc-200 focus:outline-none"
+                          />
+                          <input
+                            type="number" placeholder="EUR"
+                            value={sp.price_eur || ""}
+                            onChange={(e) => updateSizePrice(size, "price_eur", Number(e.target.value))}
+                            className="px-2 py-1.5 bg-white rounded-lg text-xs border border-zinc-200 focus:outline-none"
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                <input type="text" placeholder="Willow Type (e.g. English Willow)"
                   value={editingProduct?.willow_type || ""}
-                  onChange={(e) =>
-                    setEditingProduct({
-                      ...editingProduct,
-                      willow_type: e.target.value
-                    })
-                  }
-                  className="w-full px-3 py-2 bg-zinc-50 rounded-lg text-sm"
-                />
+                  onChange={(e) => setEditingProduct({ ...editingProduct, willow_type: e.target.value })}
+                  className="w-full px-3 py-2 bg-zinc-50 rounded-lg text-sm border border-zinc-200 focus:outline-none" />
 
-                <input
-                  type="text"
-                  placeholder="Grade"
+                <input type="text" placeholder="Grade (e.g. Grade 1)"
                   value={editingProduct?.grade || ""}
-                  onChange={(e) =>
-                    setEditingProduct({
-                      ...editingProduct,
-                      grade: e.target.value
-                    })
-                  }
-                  className="w-full px-3 py-2 bg-zinc-50 rounded-lg text-sm"
-                />
+                  onChange={(e) => setEditingProduct({ ...editingProduct, grade: e.target.value })}
+                  className="w-full px-3 py-2 bg-zinc-50 rounded-lg text-sm border border-zinc-200 focus:outline-none" />
 
-                <textarea
-                  rows={3}
-                  placeholder="Description"
+                <textarea rows={3} placeholder="Description"
                   value={editingProduct?.description || ""}
-                  onChange={(e) =>
-                    setEditingProduct({
-                      ...editingProduct,
-                      description: e.target.value
-                    })
-                  }
-                  className="w-full px-3 py-2 bg-zinc-50 rounded-lg text-sm resize-none"
-                />
+                  onChange={(e) => setEditingProduct({ ...editingProduct, description: e.target.value })}
+                  className="w-full px-3 py-2 bg-zinc-50 rounded-lg text-sm border border-zinc-200 focus:outline-none resize-none" />
 
-                <textarea
-                  rows={4}
-                  placeholder="Edge: 40mm
-Spine: 65mm"
+                <textarea rows={4} placeholder={"Specifications (one per line):\nEdge: 40mm\nSpine: 65mm"}
                   value={specText}
                   onChange={(e) => setSpecText(e.target.value)}
-                  className="w-full px-3 py-2 bg-zinc-50 rounded-lg text-sm resize-none"
-                />
+                  className="w-full px-3 py-2 bg-zinc-50 rounded-lg text-sm border border-zinc-200 focus:outline-none resize-none" />
 
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input type="checkbox"
                     checked={editingProduct?.featured || false}
-                    onChange={(e) =>
-                      setEditingProduct({
-                        ...editingProduct,
-                        featured: e.target.checked
-                      })
-                    }
-                  />
-                  Featured
+                    onChange={(e) => setEditingProduct({ ...editingProduct, featured: e.target.checked })}
+                    className="w-4 h-4" />
+                  <span className="text-sm font-medium">Featured product</span>
+                </label>
+
+                {/* File inputs */}
+                <input type="file" multiple hidden accept="image/*" ref={fileInputRef}
+                  onChange={(e) => {
+                    if (!e.target.files || !editingProduct) return;
+                    setEditingProduct({ ...editingProduct, imagesFiles: Array.from(e.target.files) });
+                  }} />
+                <input type="file" hidden accept="video/*" ref={videoInputRef}
+                  onChange={(e) => {
+                    if (!e.target.files || !editingProduct) return;
+                    setEditingProduct({ ...editingProduct, videoFile: e.target.files[0] });
+                  }} />
+
+                <div className="grid grid-cols-2 gap-3">
+                  <button type="button" onClick={() => fileInputRef.current?.click()}
+                    className="flex items-center justify-center gap-2 bg-zinc-100 hover:bg-zinc-200 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <Upload size={16} />
+                    {editingProduct?.imagesFiles?.length
+                      ? `${editingProduct.imagesFiles.length} image(s) selected`
+                      : "Upload Images"}
+                  </button>
+                  <button type="button" onClick={() => videoInputRef.current?.click()}
+                    className="flex items-center justify-center gap-2 bg-zinc-100 hover:bg-zinc-200 py-2 rounded-lg text-sm font-medium transition-colors">
+                    <Video size={16} />
+                    {editingProduct?.videoFile ? "Video selected ✓" : "Upload Video"}
+                  </button>
                 </div>
 
-                {/* IMAGE INPUT */}
-<input
-  type="file"
-  multiple
-  hidden
-  accept="image/*"
-  ref={fileInputRef}
-  onChange={(e) => {
-    if (!e.target.files || !editingProduct) return;
-    setEditingProduct({
-      ...editingProduct,
-      imagesFiles: Array.from(e.target.files),
-    });
-  }}
-/>
-
-{/* VIDEO INPUT */}
-<input
-  type="file"
-  hidden
-  accept="video/*"
-  ref={videoInputRef}
-  onChange={(e) => {
-    if (!e.target.files || !editingProduct) return;
-    setEditingProduct({
-      ...editingProduct,
-      videoFile: e.target.files[0],
-    });
-  }}
-/>
-
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  className="w-full flex items-center justify-center gap-2 bg-zinc-100 py-2 rounded-lg text-sm"
-                >
-                  <Upload size={16} />
-                  Upload Images
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => videoInputRef.current?.click()}
-                  className="w-full flex items-center justify-center gap-2 bg-zinc-100 py-2 rounded-lg text-sm"
-                >
-                  <Video size={16} />
-                  Upload Video
-                </button>
-
-                <button
-                  type="submit"
-                  className="w-full bg-black text-white py-2 rounded-lg text-sm"
-                >
+                <button type="submit"
+                  className="w-full bg-zinc-900 text-white py-3 rounded-xl text-sm font-bold hover:bg-zinc-800 transition-colors">
                   Save Product
                 </button>
-
               </form>
             </motion.div>
           </motion.div>

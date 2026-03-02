@@ -2648,6 +2648,7 @@
 
 
 import express, { Request, Response, NextFunction } from "express";
+import crypto from "crypto";
 import { createServer as createViteServer } from "vite";
 import Database from "better-sqlite3";
 import jwt from "jsonwebtoken";
@@ -2824,6 +2825,10 @@ async function startServer() {
       );
     `);
 
+    await pool.query(`
+    ALTER TABLE products ADD COLUMN IF NOT EXISTS size_prices TEXT;
+  `).catch(() => {});
+
     console.log("✅ PostgreSQL tables verified/created");
   }
 
@@ -2933,8 +2938,8 @@ async function startServer() {
             `INSERT INTO products
              (name, original_price_inr, price_inr, original_price_usd, price_usd,
               original_price_eur, price_eur, grade, willow_type, weight, style,
-              description, images, specifications, featured, video)
-             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+              description, images, specifications, featured, video,size_prices)
+             VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
              RETURNING id`,
             [
               req.body.name, req.body.original_price_inr || null, req.body.price_inr,
@@ -2942,7 +2947,7 @@ async function startServer() {
               req.body.original_price_eur || null, req.body.price_eur,
               req.body.grade, req.body.willow_type, req.body.weight, req.body.style,
               req.body.description, JSON.stringify(imagePaths), req.body.specifications,
-              req.body.featured === "1" ? 1 : 0, videoPath,
+              req.body.featured === "1" ? 1 : 0, videoPath,req.body.size_prices || '[]'
             ]
           );
           return res.json({ id: result.rows[0].id });
@@ -2951,15 +2956,15 @@ async function startServer() {
             `INSERT INTO products
              (name, original_price_inr, price_inr, original_price_usd, price_usd,
               original_price_eur, price_eur, grade, willow_type, weight, style,
-              description, images, specifications, featured, video)
-             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
+              description, images, specifications, featured, video,size_prices)
+             VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)`
           ).run(
             req.body.name, req.body.original_price_inr || null, req.body.price_inr,
             req.body.original_price_usd || null, req.body.price_usd,
             req.body.original_price_eur || null, req.body.price_eur,
             req.body.grade, req.body.willow_type, req.body.weight, req.body.style,
             req.body.description, JSON.stringify(imagePaths), req.body.specifications,
-            req.body.featured === "1" ? 1 : 0, videoPath
+            req.body.featured === "1" ? 1 : 0, videoPath, req.body.size_prices || '[]'
           );
           return res.json({ id: result.lastInsertRowid });
         }
@@ -2972,61 +2977,219 @@ async function startServer() {
 
   // Temporary routes
 
-  app.get("/api/export-backup", async (req, res) => {
-  try {
-    const products = await pool.query("SELECT * FROM products ORDER BY id ASC");
-    const inquiries = await pool.query("SELECT * FROM inquiries ORDER BY id ASC");
-    res.json({
-      products: products.rows,
-      inquiries: inquiries.rows,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Export failed" });
-  }
-});
+//   app.get("/api/export-backup", async (req, res) => {
+//   try {
+//     const products = await pool.query("SELECT * FROM products ORDER BY id ASC");
+//     const inquiries = await pool.query("SELECT * FROM inquiries ORDER BY id ASC");
+//     res.json({
+//       products: products.rows,
+//       inquiries: inquiries.rows,
+//     });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Export failed" });
+//   }
+// });
 
 
-  app.post("/api/import-backup", async (req, res) => {
-  try {
-    const { products, inquiries } = req.body;
+//   app.post("/api/import-backup", async (req, res) => {
+//   try {
+//     const { products, inquiries } = req.body;
 
-    for (const p of products) {
-      await pool.query(
-        `INSERT INTO products
-         (name, original_price_inr, price_inr, original_price_usd, price_usd,
-          original_price_eur, price_eur, grade, willow_type, weight, style,
-          description, images, specifications, featured, video, created_at)
-         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
-         ON CONFLICT DO NOTHING`,
-        [
-          p.name, p.original_price_inr, p.price_inr,
-          p.original_price_usd, p.price_usd,
-          p.original_price_eur, p.price_eur,
-          p.grade, p.willow_type, p.weight, p.style,
-          p.description, p.images, p.specifications,
-          p.featured, p.video, p.created_at,
-        ]
-      );
+//     for (const p of products) {
+//       await pool.query(
+//         `INSERT INTO products
+//          (name, original_price_inr, price_inr, original_price_usd, price_usd,
+//           original_price_eur, price_eur, grade, willow_type, weight, style,
+//           description, images, specifications, featured, video, created_at)
+//          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+//          ON CONFLICT DO NOTHING`,
+//         [
+//           p.name, p.original_price_inr, p.price_inr,
+//           p.original_price_usd, p.price_usd,
+//           p.original_price_eur, p.price_eur,
+//           p.grade, p.willow_type, p.weight, p.style,
+//           p.description, p.images, p.specifications,
+//           p.featured, p.video, p.created_at,
+//         ]
+//       );
+//     }
+
+//     for (const i of inquiries) {
+//       await pool.query(
+//         `INSERT INTO inquiries
+//          (name, contact, email, product_name, message, created_at)
+//          VALUES ($1,$2,$3,$4,$5,$6)
+//          ON CONFLICT DO NOTHING`,
+//         [i.name, i.contact, i.email, i.product_name, i.message, i.created_at]
+//       );
+//     }
+
+//     res.json({ message: `✅ Imported ${products.length} products and ${inquiries.length} inquiries` });
+//   } catch (error) {
+//     console.error(error);
+//     res.status(500).json({ message: "Import failed" });
+//   }
+// });
+
+
+  // POST /api/orders/create — creates Razorpay order + saves to DB
+  app.post("/api/orders/create", async (req: Request, res: Response) => {
+    try {
+      const {
+        product_id, product_name,
+        customer_name, customer_phone, customer_email,
+        delivery_address, customization,
+        base_price_inr, addon_price_inr, total_price_inr,
+      } = req.body;
+
+      // Create Razorpay order via REST API (no SDK needed)
+      const keyId = process.env.RAZORPAY_KEY_ID!;
+      const keySecret = process.env.RAZORPAY_KEY_SECRET!;
+      const auth = Buffer.from(`${keyId}:${keySecret}`).toString("base64");
+
+      const rzpRes = await fetch("https://api.razorpay.com/v1/orders", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Basic ${auth}`,
+        },
+        body: JSON.stringify({
+          amount: total_price_inr * 100, // paise
+          currency: "INR",
+          receipt: `order_${Date.now()}`,
+        }),
+      });
+
+      const rzpOrder = await rzpRes.json();
+
+      if (!rzpOrder.id) {
+        return res.status(500).json({ message: "Failed to create Razorpay order", detail: rzpOrder });
+      }
+
+      // Save order to DB
+      let orderId: number;
+
+      if (isProduction) {
+        const result = await pool.query(
+          `INSERT INTO orders
+          (product_id, product_name, customer_name, customer_phone, customer_email,
+            delivery_address, customization, base_price_inr, addon_price_inr,
+            total_price_inr, razorpay_order_id, payment_status)
+          VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,'pending')
+          RETURNING id`,
+          [
+            product_id, product_name, customer_name, customer_phone,
+            customer_email || null, delivery_address,
+            JSON.stringify(customization), base_price_inr, addon_price_inr,
+            total_price_inr, rzpOrder.id,
+          ]
+        );
+        orderId = result.rows[0].id;
+      } else {
+        const result = db.prepare(
+          `INSERT INTO orders
+          (product_id, product_name, customer_name, customer_phone, customer_email,
+            delivery_address, customization, base_price_inr, addon_price_inr,
+            total_price_inr, razorpay_order_id, payment_status)
+          VALUES (?,?,?,?,?,?,?,?,?,?,'pending')`
+        ).run(
+          product_id, product_name, customer_name, customer_phone,
+          customer_email || null, delivery_address,
+          JSON.stringify(customization), base_price_inr, addon_price_inr,
+          total_price_inr, rzpOrder.id
+        );
+        orderId = result.lastInsertRowid as number;
+      }
+
+      res.json({ id: orderId, razorpay_order_id: rzpOrder.id });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Order creation failed" });
     }
+  });
 
-    for (const i of inquiries) {
-      await pool.query(
-        `INSERT INTO inquiries
-         (name, contact, email, product_name, message, created_at)
-         VALUES ($1,$2,$3,$4,$5,$6)
-         ON CONFLICT DO NOTHING`,
-        [i.name, i.contact, i.email, i.product_name, i.message, i.created_at]
-      );
+  // POST /api/orders/verify — verifies Razorpay signature, marks order paid
+  // also sends WhatsApp notification + email to customer
+  app.post("/api/orders/verify", async (req: Request, res: Response) => {
+    try {
+      const { order_id, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+
+      // Verify signature
+      const keySecret = process.env.RAZORPAY_KEY_SECRET!;
+      const expectedSignature = crypto
+        .createHmac("sha256", keySecret)
+        .update(`${razorpay_order_id}|${razorpay_payment_id}`)
+        .digest("hex");
+
+      const isValid = expectedSignature === razorpay_signature;
+
+      if (!isValid) {
+        return res.status(400).json({ message: "Invalid payment signature" });
+      }
+
+      // Mark order as paid
+      if (isProduction) {
+        await pool.query(
+          `UPDATE orders SET payment_status = 'paid', razorpay_payment_id = $1 WHERE id = $2`,
+          [razorpay_payment_id, order_id]
+        );
+      } else {
+        db.prepare(
+          `UPDATE orders SET payment_status = 'paid', razorpay_payment_id = ? WHERE id = ?`
+        ).run(razorpay_payment_id, order_id);
+      }
+
+      // Fetch order details for notifications
+      let order: any;
+      if (isProduction) {
+        const result = await pool.query("SELECT * FROM orders WHERE id = $1", [order_id]);
+        order = result.rows[0];
+      } else {
+        order = db.prepare("SELECT * FROM orders WHERE id = ?").get(order_id);
+      }
+
+      // Send WhatsApp notification to admin
+      // (Opens a wa.me link — since this is server-side we just log it)
+      // For proper WhatsApp Business API integration, add that here
+      const customization = typeof order.customization === "string"
+        ? JSON.parse(order.customization)
+        : order.customization;
+
+      console.log(`
+  🎉 NEW ORDER PAID!
+  Product: ${order.product_name}
+  Customer: ${order.customer_name} | ${order.customer_phone}
+  Address: ${order.delivery_address}
+  Size: ${customization.size} | Weight: ${customization.weight}
+  Handle: ${customization.handle_shape} | Profile: ${customization.profile}
+  Laser: ${customization.laser_engraving || "None"}
+  Threading: ${customization.threading ? "Yes" : "No"} | Extra Grip: ${customization.extra_grip ? "Yes" : "No"}
+  Total: ₹${order.total_price_inr}
+  Payment ID: ${razorpay_payment_id}
+      `);
+
+      res.json({ message: "Payment verified", status: "paid" });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Verification failed" });
     }
+  });
 
-    res.json({ message: `✅ Imported ${products.length} products and ${inquiries.length} inquiries` });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: "Import failed" });
-  }
-});
-
+  // GET /api/orders — admin only
+  app.get("/api/orders", authenticateToken, async (req: Request, res: Response) => {
+    try {
+      if (isProduction) {
+        const result = await pool.query("SELECT * FROM orders ORDER BY created_at DESC");
+        return res.json(result.rows);
+      } else {
+        return res.json(db.prepare("SELECT * FROM orders ORDER BY created_at DESC").all());
+      }
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error" });
+    }
+  });
   
 
   // ---------------- DELETE ----------------
@@ -3089,15 +3252,15 @@ async function startServer() {
               original_price_eur=$6, price_eur=$7,
               grade=$8, willow_type=$9, weight=$10,
               style=$11, description=$12, images=$13,
-              specifications=$14, featured=$15, video=$16
-             WHERE id=$17`,
+              specifications=$14, featured=$15, video=$16, size_prices = $17
+             WHERE id=$18`,
             [
               req.body.name, req.body.original_price_inr || null, req.body.price_inr,
               req.body.original_price_usd || null, req.body.price_usd,
               req.body.original_price_eur || null, req.body.price_eur,
               req.body.grade, req.body.willow_type, req.body.weight, req.body.style,
               req.body.description, JSON.stringify(imagePaths), req.body.specifications,
-              req.body.featured === "1" ? 1 : 0, videoPath, id,
+              req.body.featured === "1" ? 1 : 0, videoPath,req.body.size_prices || '[]', id,
             ]
           );
         } else {
@@ -3138,6 +3301,46 @@ async function startServer() {
           `INSERT INTO inquiries (name, contact, email, product_name, message) VALUES ($1,$2,$3,$4,$5)`,
           [name, contact, email || null, product_name || null, message]
         );
+        await pool.query(`
+    CREATE TABLE IF NOT EXISTS orders (
+      id SERIAL PRIMARY KEY,
+      product_id INTEGER,
+      product_name TEXT,
+      customer_name TEXT NOT NULL,
+      customer_phone TEXT NOT NULL,
+      customer_email TEXT,
+      delivery_address TEXT NOT NULL,
+      customization TEXT,
+      base_price_inr REAL NOT NULL,
+      addon_price_inr REAL DEFAULT 0,
+      total_price_inr REAL NOT NULL,
+      razorpay_order_id TEXT,
+      razorpay_payment_id TEXT,
+      payment_status TEXT DEFAULT 'pending',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
+  `);
+
+// And for SQLite dev in your db.exec block:
+    db.exec(`
+      CREATE TABLE IF NOT EXISTS orders (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        product_id INTEGER,
+        product_name TEXT,
+        customer_name TEXT NOT NULL,
+        customer_phone TEXT NOT NULL,
+        customer_email TEXT,
+        delivery_address TEXT NOT NULL,
+        customization TEXT,
+        base_price_inr REAL NOT NULL,
+        addon_price_inr REAL DEFAULT 0,
+        total_price_inr REAL NOT NULL,
+        razorpay_order_id TEXT,
+        razorpay_payment_id TEXT,
+        payment_status TEXT DEFAULT 'pending',
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
       } else {
         db.prepare(
           `INSERT INTO inquiries (name, contact, email, product_name, message) VALUES (?,?,?,?,?)`
